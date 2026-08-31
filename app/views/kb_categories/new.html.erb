@@ -1,0 +1,8 @@
+<h2><%= l(:label_kb_new_category) %></h2>
+
+<%= labelled_form_for :kb_category, @category, url: kb_categories_path do |f| %>
+  <%= render partial: 'form', locals: { f: f } %>
+  <%= submit_tag l(:button_create) %>
+<% end %>
+
+<% html_title l(:label_kb_new_category), l(:label_knowledge_base) %>

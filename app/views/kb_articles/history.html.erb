@@ -1,0 +1,29 @@
+<h2><%= l(:label_kb_history) %>: <%= @article.title %></h2>
+
+<table class="list">
+  <thead>
+    <tr>
+      <th><%= l(:field_version) %></th>
+      <th><%= l(:field_updated_on) %></th>
+      <th><%= l(:field_author) %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="id"><%= link_to @article.version, kb_article_path(@article) %> (<%= l(:label_kb_current_version) %>)</td>
+      <td class="updated_on"><%= format_time(@article.updated_at) %></td>
+      <td class="author"><%= link_to_user(@article.updated_by || @article.author) %></td>
+    </tr>
+    <% @versions.each do |version| %>
+      <tr>
+        <td class="id"><%= link_to version.version, version_kb_article_path(@article, version: version.version) %></td>
+        <td class="updated_on"><%= format_time(version.created_at) %></td>
+        <td class="author"><%= link_to_user version.author %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p><%= link_to l(:button_back), kb_article_path(@article) %></p>
+
+<% html_title l(:label_kb_history), @article.title, l(:label_knowledge_base) %>

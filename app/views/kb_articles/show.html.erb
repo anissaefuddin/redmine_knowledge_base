@@ -1,0 +1,59 @@
+<div class="contextual">
+  <% if User.current.admin? %>
+    <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_article_path(@article), class: 'icon icon-edit', accesskey: accesskey(:edit) %>
+  <% end %>
+
+  <%= actions_dropdown do %>
+    <%= link_to sprite_icon('history', l(:label_kb_history)), history_kb_article_path(@article), class: 'icon icon-history' %>
+    <% if User.current.admin? %>
+      <%= delete_link kb_article_path(@article) %>
+    <% end %>
+  <% end %>
+</div>
+
+<h2><%= @article.title %></h2>
+<p class="author">
+  <%= l(:label_kb_last_updated_by,
+        author: link_to_user(@article.updated_by || @article.author),
+        date: format_time(@article.updated_at)).html_safe %>
+  &mdash; <%= l(:label_kb_version, number: @article.version) %>
+</p>
+
+<div class="wiki">
+  <%= textilizable @article.content %>
+</div>
+
+<h3><%= l(:label_attachment_plural) %></h3>
+<%= link_to_attachments @article, thumbnails: true %>
+
+<fieldset class="box kb-linked-projects">
+  <legend><%= l(:label_kb_implemented_in_projects) %></legend>
+  <% if @linked_projects.any? %>
+    <table class="list">
+      <tbody>
+        <% @linked_projects.each do |project| %>
+          <tr>
+            <td><%= link_to project.name, project_path(project) %></td>
+            <td class="buttons">
+              <% if User.current.admin? %>
+                <%= delete_link remove_project_kb_article_path(@article, project_id: project.id), {}, l(:button_kb_remove) %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="nodata"><%= l(:label_no_data) %></p>
+  <% end %>
+
+  <% if User.current.admin? %>
+    <%= form_tag(add_project_kb_article_path(@article), method: :post, class: 'kb-add-project-form') do %>
+      <%= select_tag :project_id,
+                      options_from_collection_for_select(Project.active.sorted.to_a - @linked_projects, :id, :name) %>
+      <%= submit_tag l(:button_kb_add), class: 'button-small' %>
+    <% end %>
+  <% end %>
+</fieldset>
+
+<% html_title @article.title, l(:label_knowledge_base) %>

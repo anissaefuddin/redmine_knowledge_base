@@ -1,0 +1,24 @@
+fieldset.kb-category {
+  margin-bottom: 1.5em;
+}
+
+fieldset.kb-category legend .icon {
+  vertical-align: middle;
+}
+
+p.kb-category-description {
+  color: #666;
+  margin-top: 0;
+}
+
+p.kb-category-actions {
+  margin-top: 0.5em;
+}
+
+form.kb-search-form {
+  margin-bottom: 1.5em;
+}
+
+fieldset.kb-linked-projects table.list {
+  margin-bottom: 1em;
+}

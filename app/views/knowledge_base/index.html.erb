@@ -1,0 +1,70 @@
+<div class="contextual">
+  <% if User.current.admin? %>
+    <%= link_to sprite_icon('add', l(:label_kb_new_category)), new_kb_category_path, class: 'icon icon-add' %>
+  <% end %>
+</div>
+
+<h2><%= l(:label_knowledge_base) %></h2>
+
+<%= form_tag(knowledge_base_path, method: :get, class: 'kb-search-form') do %>
+  <%= text_field_tag :q, @q, size: 40, placeholder: l(:label_search) %>
+  <%= submit_tag l(:button_apply), name: nil %>
+<% end %>
+
+<% if @articles %>
+  <h3><%= l(:label_search) %>: "<%= @q %>"</h3>
+  <% if @articles.any? %>
+    <table class="list">
+      <tbody>
+        <% @articles.each do |article| %>
+          <tr>
+            <td><%= link_to article.title, kb_article_path(article) %></td>
+            <td><%= article.kb_category.name %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="nodata"><%= l(:label_no_data) %></p>
+  <% end %>
+  <hr>
+<% end %>
+
+<% if @categories.blank? %>
+  <p class="nodata"><%= l(:text_kb_no_categories) %></p>
+<% else %>
+  <% @categories.each do |category| %>
+    <fieldset class="box kb-category">
+      <legend>
+        <%= category.name %>
+        <% if category.restricted? %>
+          <%= content_tag(:span, sprite_icon('lock', icon_only: true),
+                           title: "#{l(:label_kb_restricted_to_groups)}: #{category.groups.map(&:name).join(', ')}") %>
+        <% end %>
+      </legend>
+      <% if category.description.present? %>
+        <p class="kb-category-description"><%= category.description %></p>
+      <% end %>
+
+      <% articles = category.kb_articles.select { |a| a.visible?(User.current) } %>
+      <% if articles.any? %>
+        <ul>
+          <% articles.each do |article| %>
+            <li><%= link_to article.title, kb_article_path(article) %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="nodata"><%= l(:text_kb_no_articles_in_category) %></p>
+      <% end %>
+
+      <% if User.current.admin? %>
+        <p class="kb-category-actions">
+          <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: category.id), class: 'icon icon-add' %>
+          <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(category), class: 'icon icon-edit' %>
+        </p>
+      <% end %>
+    </fieldset>
+  <% end %>
+<% end %>
+
+<% html_title l(:label_knowledge_base) %>

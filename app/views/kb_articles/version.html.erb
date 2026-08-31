@@ -1,0 +1,13 @@
+<h2><%= @version.title %> <span class="version-note">(<%= l(:label_kb_version, number: @version.version) %>)</span></h2>
+<p class="author"><%= l(:label_kb_last_updated_by, author: link_to_user(@version.author), date: format_time(@version.created_at)).html_safe %></p>
+
+<div class="wiki">
+  <%= textilizable @version.content %>
+</div>
+
+<p>
+  <%= link_to l(:label_kb_history), history_kb_article_path(@article) %> |
+  <%= link_to l(:button_back), kb_article_path(@article) %>
+</p>
+
+<% html_title l(:label_kb_version, number: @version.version), @article.title, l(:label_knowledge_base) %>

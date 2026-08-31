@@ -1,0 +1,20 @@
+<%= error_messages_for 'category' %>
+
+<div class="box tabular">
+  <p><%= f.text_field :name, required: true, size: 60 %></p>
+  <p><%= f.text_area :description, rows: 3, cols: 60 %></p>
+  <p><%= f.text_field :position, size: 5 %></p>
+</div>
+
+<% if @all_groups %>
+  <fieldset class="box">
+    <legend><%= l(:label_kb_restricted_to_groups) %></legend>
+    <p class="info"><%= l(:text_kb_group_restriction_hint) %></p>
+    <% @all_groups.each do |group| %>
+      <label class="block">
+        <%= check_box_tag 'group_ids[]', group.id, @category.group_ids.include?(group.id) %>
+        <%= group.name %>
+      </label>
+    <% end %>
+  </fieldset>
+<% end %>

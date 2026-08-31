@@ -1,0 +1,17 @@
+<%= error_messages_for 'article' %>
+
+<div class="box tabular">
+  <p>
+    <%= f.select :kb_category_id, KbCategory.sorted.map { |c| [c.name, c.id] }, required: true %>
+  </p>
+  <p><%= f.text_field :title, required: true, size: 60 %></p>
+  <p>
+    <%= f.text_area :content, id: 'kb_article_content', rows: 20, cols: 100, class: 'wiki-edit', required: true %>
+  </p>
+</div>
+<%= wikitoolbar_for 'kb_article_content' %>
+
+<fieldset class="box">
+  <legend><%= l(:label_attachment_plural) %></legend>
+  <%= render partial: 'attachments/form', locals: { container: @article } %>
+</fieldset>
