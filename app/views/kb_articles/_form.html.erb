@@ -1,6 +1,7 @@
 <%= error_messages_for 'article' %>
 
 <div class="kb-form-title-row">
+  <%= f.text_field :icon, class: 'kb-form-icon-input', placeholder: '🙂', maxlength: 8, title: l(:text_kb_icon_hint) %>
   <%= f.text_field :title, required: true, class: 'kb-form-title-input', placeholder: l(:label_kb_article) %>
 </div>
 
@@ -39,7 +40,15 @@
 </div>
 
 <div class="box">
-  <%= f.text_area :content, id: 'kb_article_content', rows: 20, cols: 100, class: 'wiki-edit', required: true %>
+  <%
+    # Lets the block editor preview an already-uploaded image (referenced in
+    # saved content by plain filename, e.g. ![caption](photo.png)) without
+    # needing the attachment's id from this editing session - it wasn't
+    # uploaded in this session, so the id was never recorded client-side.
+    existing_attachment_ids_by_filename = @article.attachments.to_h { |a| [a.filename, a.id] }
+  %>
+  <%= f.text_area :content, id: 'kb_article_content', rows: 20, cols: 100, class: 'wiki-edit', required: true,
+                  data: { existing_attachments: existing_attachment_ids_by_filename.to_json } %>
 </div>
 
 <fieldset class="box">

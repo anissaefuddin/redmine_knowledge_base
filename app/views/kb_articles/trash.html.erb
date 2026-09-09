@@ -1,0 +1,36 @@
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %> / <%= l(:label_kb_trash) %>
+</div>
+
+<h2><%= l(:label_kb_trash) %></h2>
+
+<% if @articles.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th><%= l(:field_subject) %></th>
+        <th><%= l(:label_kb_category) %></th>
+        <th><%= l(:label_kb_deleted_at) %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @articles.each do |article| %>
+        <tr>
+          <td><%= article.title %></td>
+          <td class="text-muted"><%= article.kb_category.name %></td>
+          <td class="text-muted"><%= format_time(article.deleted_at) %></td>
+          <td class="buttons">
+            <%= button_to l(:button_kb_restore), restore_kb_article_path(article), method: :post, class: 'button-small' %>
+            <%= button_to l(:button_kb_delete_permanently), destroy_permanently_kb_article_path(article), method: :delete,
+                          class: 'button-small', form: { data: { confirm: l(:text_kb_confirm_delete_permanently) } } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata"><%= l(:text_kb_no_trashed_articles) %></p>
+<% end %>
+
+<% html_title l(:label_kb_trash), l(:label_knowledge_base) %>

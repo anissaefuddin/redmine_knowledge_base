@@ -104,3 +104,33 @@ id:
     zero: "0 hasil"
     one: "1 hasil"
     other: "%{count} hasil"
+
+  # Trash / restore
+  label_kb_trash: "Sampah"
+  notice_kb_moved_to_trash: "Artikel dipindahkan ke Sampah."
+  notice_kb_restored: "Artikel dikembalikan."
+  text_kb_no_trashed_articles: "Sampah kosong."
+  button_kb_delete_permanently: "Hapus permanen"
+  text_kb_confirm_delete_permanently: "Hapus artikel ini secara permanen? Tidak bisa dibatalkan - riwayat versi dan lampiran ikut terhapus."
+  label_kb_deleted_at: "Dihapus"
+
+  # Page icon
+  label_kb_icon: "Ikon"
+  text_kb_icon_hint: "Satu emoji yang ditampilkan di samping judul pada daftar dan card."
+
+  # Saved searches
+  label_kb_saved_searches: "Pencarian tersimpan"
+  label_kb_search_name_placeholder: "Beri nama pencarian ini…"
+  label_kb_untitled_search: "Pencarian tanpa nama"
+  button_kb_save_search: "Simpan pencarian"
+  notice_kb_search_saved: "Pencarian disimpan."
+
+  # Synced blocks
+  label_kb_synced_block: "Synced block"
+  text_kb_synced_block_hint: "Konten ini dibagikan: mengedit dan menyimpan di sini akan memperbarui semua artikel yang mereferensikan synced block yang sama."
+
+  label_kb_link_preview_error: "Tidak bisa mengambil preview untuk link ini."
+
+  errors:
+    messages:
+      kb_invalid_slug: "hanya boleh berisi huruf, angka, tanda hubung, dan garis bawah"

@@ -3,6 +3,7 @@
 require 'redmine'
 require_relative 'lib/redmine_knowledge_base/authorization'
 require_relative 'lib/redmine_knowledge_base/hooks/views_layouts_hook'
+require_relative 'lib/redmine_knowledge_base/macros'
 
 Redmine::Plugin.register :redmine_knowledge_base do
   name 'Redmine Knowledge Base'
@@ -26,7 +27,9 @@ Redmine::Plugin.register :redmine_knowledge_base do
   # so it can reach users regardless of which projects they belong to).
   project_module :knowledge_base do
     permission :view_knowledge_base,
-               { knowledge_base: [:index], kb_categories: [:show], kb_articles: [:show, :history, :version, :diff] },
+               { knowledge_base: [:index], kb_categories: [:show],
+                 kb_articles: [:show, :history, :version, :diff], kb_synced_blocks: [:show],
+                 kb_saved_searches: %i[create destroy] },
                read: true
 
     # Contributor tier: create articles and edit ones they authored. Kept as
@@ -34,10 +37,12 @@ Redmine::Plugin.register :redmine_knowledge_base do
     # can be given just one of the two if needed - e.g. a role that may
     # draft new articles but never touch someone else's.
     permission :add_kb_articles,
-               { kb_articles: %i[new create duplicate], attachments: [:upload] }
+               { kb_articles: %i[new create duplicate], kb_uploads: [:create],
+                 kb_link_previews: [:show], kb_synced_blocks: [:update] }
 
     permission :edit_own_kb_articles,
-               { kb_articles: %i[edit update], attachments: [:upload] }
+               { kb_articles: %i[edit update], kb_uploads: [:create],
+                 kb_link_previews: [:show], kb_synced_blocks: [:update] }
 
     # Editor tier: superset of the two Contributor permissions above, plus
     # edit/delete/pin/restore on EVERY article regardless of author. Deliberately
@@ -47,8 +52,9 @@ Redmine::Plugin.register :redmine_knowledge_base do
     # with no migration needed.
     permission :manage_kb_articles,
                { kb_articles: %i[new create duplicate edit update destroy restore_version
-                                  add_project remove_project add_related remove_related toggle_pin],
-                 attachments: [:upload] }
+                                  add_project remove_project add_related remove_related toggle_pin
+                                  trash restore destroy_permanently],
+                 kb_uploads: [:create], kb_link_previews: [:show], kb_synced_blocks: [:update] }
 
     permission :manage_kb_categories,
                { kb_categories: %i[index new create edit update destroy] }

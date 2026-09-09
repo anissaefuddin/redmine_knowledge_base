@@ -104,3 +104,35 @@ en:
     zero: "0 results"
     one: "1 result"
     other: "%{count} results"
+
+  # Trash / restore
+  label_kb_trash: "Trash"
+  notice_kb_moved_to_trash: "Article moved to Trash."
+  notice_kb_restored: "Article restored."
+  text_kb_no_trashed_articles: "Trash is empty."
+  button_kb_delete_permanently: "Delete permanently"
+  text_kb_confirm_delete_permanently: "Delete this article permanently? This cannot be undone - version history and attachments go with it."
+  label_kb_deleted_at: "Deleted"
+
+  # Page icon
+  label_kb_icon: "Icon"
+  text_kb_icon_hint: "One emoji shown next to the title in lists and cards."
+
+  # Saved searches
+  label_kb_saved_searches: "Saved searches"
+  label_kb_search_name_placeholder: "Name this search…"
+  label_kb_untitled_search: "Untitled search"
+  button_kb_save_search: "Save search"
+  notice_kb_search_saved: "Search saved."
+
+  # Synced blocks
+  label_kb_synced_block: "Synced block"
+  text_kb_synced_block_hint: "This content is shared: editing and saving it here updates every article that references this same synced block."
+
+  # Bookmark / PDF / columns / toggle block editor UI (JS-only strings live
+  # in kb_block_editor.js; these are the ones referenced from Ruby views)
+  label_kb_link_preview_error: "Could not fetch a preview for this link."
+
+  errors:
+    messages:
+      kb_invalid_slug: "may only contain letters, numbers, hyphens and underscores"

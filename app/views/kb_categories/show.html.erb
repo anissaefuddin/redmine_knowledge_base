@@ -68,7 +68,7 @@
         <tbody>
           <% @articles.each do |article| %>
             <tr>
-              <td><%= link_to article.title, kb_article_path(article) %></td>
+              <td><%= link_to kb_article_display_title(article), kb_article_path(article) %></td>
               <td><%= kb_status_badge(article) %></td>
               <% if show_category_column %>
                 <td class="text-muted"><%= article.kb_category.name if article.kb_category_id != @category.id %></td>

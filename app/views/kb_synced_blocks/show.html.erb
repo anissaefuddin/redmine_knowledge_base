@@ -1,0 +1,20 @@
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %> / <%= l(:label_kb_synced_block) %>
+</div>
+
+<h2><%= l(:label_kb_synced_block) %>: <%= @slug %></h2>
+
+<p class="info"><%= l(:text_kb_synced_block_hint) %></p>
+
+<%= labelled_form_for :kb_synced_block, @block, url: kb_synced_block_path(@slug), html: { method: :put } do |f| %>
+  <div class="box">
+    <%= f.text_area :content, rows: 16, cols: 100, class: 'wiki-edit', required: true %>
+  </div>
+  <% if kb_can_upload? %>
+    <div class="kb-form-actions">
+      <%= submit_tag l(:button_save) %>
+    </div>
+  <% end %>
+<% end %>
+
+<% html_title l(:label_kb_synced_block), @slug, l(:label_knowledge_base) %>

@@ -11,7 +11,7 @@ module RedmineKnowledgeBase
 
     included do
       helper_method :kb_manage_articles?, :kb_manage_categories?, :kb_manage_tags?,
-                    :kb_add_articles?, :kb_edit_article? if respond_to?(:helper_method)
+                    :kb_add_articles?, :kb_edit_article?, :kb_can_upload? if respond_to?(:helper_method)
     end
 
     # Editor/Admin tier: create/edit/delete/pin/restore on EVERY article.
@@ -61,6 +61,19 @@ module RedmineKnowledgeBase
 
     def require_kb_edit_article
       render_403 unless kb_edit_article?(@article)
+    end
+
+    # Anyone who could conceivably be editing article content right now:
+    # Contributor drafting a new article, Contributor/Editor/Admin editing
+    # an existing one. Deliberately not article-scoped (unlike
+    # kb_edit_article?) - the block editor uploads inline images before a
+    # brand new article has even been saved once.
+    def kb_can_upload?(user = User.current)
+      kb_add_articles?(user) || user.allowed_to?(:edit_own_kb_articles, nil, global: true)
+    end
+
+    def require_kb_can_upload
+      render_403 unless kb_can_upload?
     end
   end
 end

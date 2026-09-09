@@ -36,6 +36,13 @@ module KnowledgeBaseHelper
     end
   end
 
+  # "🙂 Title" when the article has an icon set, otherwise just the title -
+  # used everywhere an article's title is linked (cards, tables, the h1)
+  # so the icon shows up consistently instead of only in one place.
+  def kb_article_display_title(article)
+    article.icon.present? ? "#{article.icon} #{article.title}" : article.title
+  end
+
   # "Restricted to groups: X, Y — Roles: A, B", assembled from only
   # whichever of the two restriction axes the category actually has
   # configured (see KbCategory#visible?).

@@ -18,6 +18,7 @@ class KnowledgeBaseController < ApplicationController
     @visible_category_ids = all_categories.select { |c| c.visible?(User.current) }.map(&:id)
     @counts_by_category_id = KbArticle.group(:kb_category_id).count
     @root_categories = KbCategory.build_tree(all_categories)
+    @saved_searches = KbSavedSearch.where(user: User.current).sorted
 
     @pinned_articles = KbArticle.pinned.where(kb_category_id: @visible_category_ids)
     @pinned_articles = @pinned_articles.published unless kb_manage_articles?

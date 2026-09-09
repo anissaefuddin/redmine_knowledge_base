@@ -24,6 +24,16 @@ class KbArticle < ApplicationRecord
 
   enum status: { draft: 'draft', published: 'published' }
 
+  # Soft delete: Delete moves an article to Trash (deleted_at set) instead
+  # of removing the row outright, so an accidental delete of a published
+  # SOP or policy isn't unrecoverable. default_scope keeps every normal
+  # query (show/edit/search/etc.) from ever seeing a trashed article without
+  # having to sprinkle `where(deleted_at: nil)` through every call site -
+  # only the Trash admin view and restore/purge actions reach past it via
+  # `.unscoped`/`.trashed`.
+  default_scope { where(deleted_at: nil) }
+  scope :trashed, -> { unscoped.where.not(deleted_at: nil) }
+
   scope :pinned, -> { where.not(pinned_at: nil).order(pinned_at: :desc) }
   # Published articles, plus the given user's own drafts - so a Contributor
   # searching the knowledge base can still find drafts they authored
@@ -54,6 +64,23 @@ class KbArticle < ApplicationRecord
 
   def referenced_by
     KbArticle.joins(:kb_article_relations).where(kb_article_relations: { related_kb_article_id: id })
+  end
+
+  # Automatic backlinks: any other article whose content happens to link
+  # straight to this one (e.g. a pasted /kb_articles/N URL, or a link
+  # inserted through the editor), on top of the explicit, manually-curated
+  # Related Articles relation above. Computed on read rather than cached on
+  # write, so it can't go stale if content changes after the fact.
+  def auto_referenced_by
+    KbArticle.where('content LIKE ?', "%/kb_articles/#{id}%").where.not(id: id)
+  end
+
+  def soft_delete!
+    update_column(:deleted_at, Time.current)
+  end
+
+  def restore!
+    update_column(:deleted_at, nil)
   end
 
   def pinned?

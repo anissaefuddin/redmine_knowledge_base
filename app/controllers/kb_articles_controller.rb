@@ -7,10 +7,13 @@ class KbArticlesController < ApplicationController
 
   before_action :require_login
   before_action :find_article, only: %i[show edit update destroy history version diff restore_version add_project remove_project add_related remove_related toggle_pin duplicate]
+  before_action :find_trashed_article, only: %i[restore destroy_permanently]
   before_action :authorize_view, only: %i[show history version diff duplicate]
   before_action :require_kb_add_articles, only: %i[new create duplicate]
   before_action :require_kb_edit_article, only: %i[edit update]
-  before_action :require_kb_manage_articles, only: %i[destroy restore_version add_project remove_project add_related remove_related toggle_pin]
+  before_action :require_kb_manage_articles,
+                only: %i[destroy restore_version add_project remove_project add_related remove_related
+                          toggle_pin trash restore destroy_permanently]
 
   helper :knowledge_base
   helper :attachments
@@ -18,7 +21,8 @@ class KbArticlesController < ApplicationController
   def show
     @linked_projects = @article.projects.order(:name)
     @related_articles = @article.related_articles.select { |a| a.visible?(User.current) }
-    @referenced_by = @article.referenced_by.select { |a| a.visible?(User.current) }
+    @referenced_by = (@article.referenced_by + @article.auto_referenced_by).uniq
+                                                                            .select { |a| a.visible?(User.current) }
     @breadcrumb = @article.kb_category.self_and_ancestors
     @counts_by_category_id = KbArticle.group(:kb_category_id).count
     @category_tree = KbCategory.build_tree(KbCategory.sorted.to_a)
@@ -58,10 +62,29 @@ class KbArticlesController < ApplicationController
     end
   end
 
+  # Moves the article to Trash instead of deleting it outright - see
+  # KbArticle's default_scope comment. Recoverable via #restore until
+  # someone with manage_kb_articles empties it with #destroy_permanently.
   def destroy
+    @article.soft_delete!
+    flash[:notice] = l(:notice_kb_moved_to_trash)
+    redirect_to knowledge_base_path
+  end
+
+  def trash
+    @articles = KbArticle.trashed.order(deleted_at: :desc)
+  end
+
+  def restore
+    @article.restore!
+    flash[:notice] = l(:notice_kb_restored)
+    redirect_to kb_article_path(@article)
+  end
+
+  def destroy_permanently
     @article.destroy
     flash[:notice] = l(:notice_successful_delete)
-    redirect_to knowledge_base_path
+    redirect_to trash_kb_articles_path
   end
 
   def history
@@ -168,11 +191,17 @@ class KbArticlesController < ApplicationController
     render_404
   end
 
+  def find_trashed_article
+    @article = KbArticle.trashed.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
   def authorize_view
     render_403 unless @article.visible?(User.current)
   end
 
   def article_params
-    params.require(:kb_article).permit(:title, :content, :kb_category_id, :status, tag_ids: [])
+    params.require(:kb_article).permit(:title, :content, :kb_category_id, :status, :icon, tag_ids: [])
   end
 end
