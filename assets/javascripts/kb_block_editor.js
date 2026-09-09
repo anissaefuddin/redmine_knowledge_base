@@ -1384,15 +1384,23 @@
 
       figure.appendChild(toolbar);
 
+      // resizeWrap carries the explicit pixel width and alignment margin;
+      // imageBox is just the image itself plus its resize handle, kept
+      // separate from the caption below so the handle's bottom-right
+      // positioning anchors to the image's own corner - not the bottom of
+      // whatever caption text happens to wrap onto a second line.
       var resizeWrap = document.createElement('div');
       resizeWrap.className = 'kb-image-resize-wrap';
       if (block.width) resizeWrap.style.width = block.width + 'px';
+
+      var imageBox = document.createElement('div');
+      imageBox.className = 'kb-image-box';
 
       var preview = document.createElement('img');
       preview.className = 'kb-block-image-preview';
       preview.src = previewSrc;
       preview.alt = block.caption || '';
-      resizeWrap.appendChild(preview);
+      imageBox.appendChild(preview);
 
       // Drag-to-resize: only left/center/right (not full-width, which is
       // deliberately always 100% of the column) get a handle - dragging
@@ -1422,11 +1430,13 @@
           document.addEventListener('pointermove', onMove);
           document.addEventListener('pointerup', onUp);
         });
-        resizeWrap.appendChild(handle);
+        imageBox.appendChild(handle);
       }
+      resizeWrap.appendChild(imageBox);
 
-      figure.appendChild(resizeWrap);
-
+      // Caption lives inside resizeWrap (not the wider figure) so its width
+      // - and centering/left/right margin - always tracks the image's own
+      // displayed width instead of stretching across the whole column.
       var caption = document.createElement('input');
       caption.type = 'text';
       caption.className = 'kb-image-caption';
@@ -1447,8 +1457,9 @@
           e.stopPropagation();
         }
       });
-      figure.appendChild(caption);
+      resizeWrap.appendChild(caption);
 
+      figure.appendChild(resizeWrap);
       wrap.appendChild(figure);
     } else {
       wrap.appendChild(self.buildTextRow(block, index));
@@ -1590,10 +1601,15 @@
     wrap.className = 'kb-block-pdf-wrap';
 
     if (block.text && !block.uploading) {
+      wrap.className = 'kb-block-pdf-wrap kb-block-pdf-populated';
+
+      var bar = document.createElement('div');
+      bar.className = 'kb-block-pdf-bar';
+
       var info = document.createElement('div');
       info.className = 'kb-block-pdf-info';
       info.textContent = '📄 ' + block.text;
-      wrap.appendChild(info);
+      bar.appendChild(info);
 
       var clearBtn = document.createElement('button');
       clearBtn.type = 'button';
@@ -1605,7 +1621,19 @@
         self.sync();
         self.render();
       });
-      wrap.appendChild(clearBtn);
+      bar.appendChild(clearBtn);
+      wrap.appendChild(bar);
+
+      // Same preview a reader sees on the published page (see
+      // kb_render_enhance.js#renderPdfEmbeds) - editing should look like a
+      // preview of the real thing, not a bare filename.
+      if (block.attachmentId) {
+        var pdfPreview = document.createElement('iframe');
+        pdfPreview.className = 'kb-pdf-embed';
+        pdfPreview.src = '/attachments/download/' + block.attachmentId + '/' + encodeURIComponent(block.text);
+        pdfPreview.title = block.text;
+        wrap.appendChild(pdfPreview);
+      }
     } else {
       var pickBtn = document.createElement('button');
       pickBtn.type = 'button';
