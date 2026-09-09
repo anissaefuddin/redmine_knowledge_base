@@ -1,6 +1,7 @@
 <%= error_messages_for 'category' %>
 
-<div class="box tabular">
+<fieldset class="box tabular">
+  <legend><%= l(:label_kb_category_information) %></legend>
   <p><%= f.text_field :name, required: true, size: 60 %></p>
   <p><%= f.text_area :description, rows: 3, cols: 60 %></p>
   <p>
@@ -11,30 +12,35 @@
     <%= f.text_field :position, size: 5 %>
     <em class="info"><%= l(:text_kb_position_hint) %></em>
   </p>
-</div>
+</fieldset>
 
-<% if @all_groups %>
-  <fieldset class="box">
-    <legend><%= l(:label_kb_restricted_to_groups) %></legend>
-    <p class="info"><%= l(:text_kb_group_restriction_hint) %></p>
-    <% @all_groups.each do |group| %>
-      <label class="block">
-        <%= check_box_tag 'group_ids[]', group.id, @category.group_ids.include?(group.id) %>
-        <%= group.name %>
-      </label>
-    <% end %>
-  </fieldset>
-<% end %>
+<% if @all_groups || @all_roles %>
+  <div class="kb-section-title"><%= l(:label_kb_visibility) %></div>
+  <p class="info"><%= l(:text_kb_restriction_inheritance_hint) %></p>
 
-<% if @all_roles %>
-  <fieldset class="box">
-    <legend><%= l(:label_kb_restricted_to_roles) %></legend>
-    <p class="info"><%= l(:text_kb_role_restriction_hint) %></p>
-    <% @all_roles.each do |role| %>
-      <label class="block">
-        <%= check_box_tag 'role_ids[]', role.id, @category.role_ids.include?(role.id) %>
-        <%= role.name %>
-      </label>
-    <% end %>
-  </fieldset>
+  <% if @all_groups %>
+    <fieldset class="box">
+      <legend><%= l(:label_kb_restricted_to_groups) %></legend>
+      <p class="info"><%= l(:text_kb_group_restriction_hint) %></p>
+      <% @all_groups.each do |group| %>
+        <label class="block">
+          <%= check_box_tag 'group_ids[]', group.id, @category.group_ids.include?(group.id) %>
+          <%= group.name %>
+        </label>
+      <% end %>
+    </fieldset>
+  <% end %>
+
+  <% if @all_roles %>
+    <fieldset class="box">
+      <legend><%= l(:label_kb_restricted_to_roles) %></legend>
+      <p class="info"><%= l(:text_kb_role_restriction_hint) %></p>
+      <% @all_roles.each do |role| %>
+        <label class="block">
+          <%= check_box_tag 'role_ids[]', role.id, @category.role_ids.include?(role.id) %>
+          <%= role.name %>
+        </label>
+      <% end %>
+    </fieldset>
+  <% end %>
 <% end %>

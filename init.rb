@@ -26,12 +26,29 @@ Redmine::Plugin.register :redmine_knowledge_base do
   # so it can reach users regardless of which projects they belong to).
   project_module :knowledge_base do
     permission :view_knowledge_base,
-               { knowledge_base: [:index], kb_categories: [:show], kb_articles: [:show, :history, :version] },
+               { knowledge_base: [:index], kb_categories: [:show], kb_articles: [:show, :history, :version, :diff] },
                read: true
 
+    # Contributor tier: create articles and edit ones they authored. Kept as
+    # two separate permissions (rather than a single "contribute") so a role
+    # can be given just one of the two if needed - e.g. a role that may
+    # draft new articles but never touch someone else's.
+    permission :add_kb_articles,
+               { kb_articles: %i[new create duplicate], attachments: [:upload] }
+
+    permission :edit_own_kb_articles,
+               { kb_articles: %i[edit update], attachments: [:upload] }
+
+    # Editor tier: superset of the two Contributor permissions above, plus
+    # edit/delete/pin/restore on EVERY article regardless of author. Deliberately
+    # keeps the full action list (not just the "everyone else's article" actions)
+    # so existing roles that already have manage_kb_articles granted keep every
+    # capability they had before add_kb_articles/edit_own_kb_articles existed,
+    # with no migration needed.
     permission :manage_kb_articles,
-               { kb_articles: %i[new create edit update destroy restore_version
-                                  add_project remove_project add_related remove_related toggle_pin] }
+               { kb_articles: %i[new create duplicate edit update destroy restore_version
+                                  add_project remove_project add_related remove_related toggle_pin],
+                 attachments: [:upload] }
 
     permission :manage_kb_categories,
                { kb_categories: %i[index new create edit update destroy] }

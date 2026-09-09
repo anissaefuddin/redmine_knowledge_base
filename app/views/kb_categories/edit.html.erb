@@ -6,7 +6,10 @@
 
 <%= labelled_form_for :kb_category, @category, url: kb_category_path(@category), html: { method: :put } do |f| %>
   <%= render partial: 'form', locals: { f: f } %>
-  <%= submit_tag l(:button_save) %>
+  <div class="kb-form-actions">
+    <%= submit_tag l(:button_kb_save_category) %>
+    <%= link_to l(:button_cancel), kb_categories_path %>
+  </div>
 <% end %>
 
 <% html_title l(:label_kb_edit_category), @category.name, l(:label_knowledge_base) %>

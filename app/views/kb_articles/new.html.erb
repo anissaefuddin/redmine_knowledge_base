@@ -10,9 +10,22 @@
 <%= labelled_form_for :kb_article, @article, url: kb_articles_path, html: { multipart: true, id: 'kb-article-form' } do |f| %>
   <%= render partial: 'form', locals: { f: f } %>
   <div class="kb-form-actions">
-    <%= submit_tag l(:button_create) %>
+    <%= submit_tag l(:button_kb_save_draft), id: 'kb-article-submit' %>
     <%= link_to l(:button_cancel), category ? kb_category_path(category) : knowledge_base_path %>
   </div>
 <% end %>
+
+<script>
+  (function() {
+    var submitBtn = document.getElementById('kb-article-submit');
+    var radios = document.querySelectorAll('.kb-status-radio');
+    var labels = { draft: <%= l(:button_kb_save_draft).to_json.html_safe %>, published: <%= l(:button_kb_publish).to_json.html_safe %> };
+    radios.forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        if (radio.checked) { submitBtn.value = labels[radio.value] || submitBtn.value; }
+      });
+    });
+  })();
+</script>
 
 <% html_title l(:label_kb_new_article), l(:label_knowledge_base) %>

@@ -1,13 +1,16 @@
 <div class="contextual">
-  <% if kb_manage_articles? %>
-    <%= button_to (@article.pinned? ? l(:button_kb_unpin) : l(:button_kb_pin)), toggle_pin_kb_article_path(@article),
-                  method: :post, form_class: 'kb-inline-button' %>
+  <% if kb_edit_article?(@article) %>
     <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_article_path(@article), class: 'icon icon-edit', accesskey: accesskey(:edit) %>
   <% end %>
 
   <%= actions_dropdown do %>
+    <% if kb_add_articles? %>
+      <%= link_to l(:button_kb_duplicate), duplicate_kb_article_path(@article), method: :post, class: 'icon icon-copy' %>
+    <% end %>
     <%= link_to sprite_icon('history', l(:label_kb_history)), history_kb_article_path(@article), class: 'icon icon-history' %>
     <% if kb_manage_articles? %>
+      <%= link_to (@article.pinned? ? l(:button_kb_unpin) : l(:button_kb_pin)), toggle_pin_kb_article_path(@article),
+                  method: :post, class: 'icon icon-bookmark' %>
       <%= delete_link kb_article_path(@article) %>
     <% end %>
   <% end %>
@@ -33,8 +36,8 @@
       <% if @article.pinned? %>
         <span class="tag kb-status-pinned"><%= l(:label_kb_pinned) %></span>
       <% end %>
-      <% if kb_manage_articles? %>
-        <span class="tag <%= kb_status_css_class(@article) %>"><%= kb_status_label(@article) %></span>
+      <% if kb_edit_article?(@article) %>
+        <%= kb_status_badge(@article) %>
       <% end %>
       <% @article.tags.each do |tag| %><span class="tag tag-accent"><%= tag.name %></span><% end %>
     </div>
@@ -78,7 +81,10 @@
         </ul>
       <% end %>
       <% if @related_articles.empty? && @referenced_by.empty? %>
-        <p class="nodata"><%= l(:label_no_data) %></p>
+        <p class="nodata">
+          <%= l(:text_kb_no_related_articles) %>
+          <span class="kb-empty-hint"><%= l(:text_kb_no_related_articles_hint) %></span>
+        </p>
       <% end %>
 
       <% if kb_manage_articles? %>
@@ -108,7 +114,7 @@
           </tbody>
         </table>
       <% else %>
-        <p class="nodata"><%= l(:label_no_data) %></p>
+        <p class="nodata"><%= l(:text_kb_no_related_projects) %></p>
       <% end %>
 
       <% if kb_manage_articles? %>

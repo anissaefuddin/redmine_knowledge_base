@@ -31,7 +31,7 @@ class KbCategoriesController < ApplicationController
     visible_category_ids = @category.self_and_descendants.select { |c| c.visible?(User.current) }.map(&:id)
 
     scope = KbArticle.where(kb_category_id: visible_category_ids)
-    scope = scope.published unless kb_manage_articles?
+    scope = scope.published_or_authored_by(User.current) unless kb_manage_articles?
     @category_total_count = scope.count
 
     if params[:q].present?

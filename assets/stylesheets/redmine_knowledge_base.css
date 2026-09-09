@@ -74,6 +74,46 @@ span.kb-status-pinned {
   color: #8a4b00;
 }
 
+/* Status badges are a lifecycle state, not metadata like tags - give them a
+   dot-indicator pill instead of the plain tag shape so they read as
+   distinct from tag chips at a glance. */
+span.kb-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+span.kb-status-badge .kb-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+span.kb-status-badge.kb-status-draft {
+  color: #7a5c00;
+}
+
+span.kb-status-badge.kb-status-published {
+  color: #256029;
+}
+
+p.nodata .kb-empty-hint {
+  display: block;
+  color: #888;
+  font-size: 0.9em;
+  margin-top: 2px;
+}
+
 /* 3-column layout: category tree | main content | table of contents */
 
 .kb-layout {
@@ -250,42 +290,103 @@ table.kb-article-table .kb-article-tags span.tag {
   padding-left: 20px;
 }
 
-/* Pinned documents (knowledge base home) */
+/* Knowledge base home: tagline, section titles, article/category card grids,
+   search filter chips - shared between the landing page and search results
+   so the home page doesn't read as a bare admin index. */
 
-.kb-pinned-grid {
+.kb-tagline {
+  color: #666;
+  margin-top: -0.5em;
+}
+
+.kb-section-title {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 1.75em 0 8px;
+}
+
+.kb-filter-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.kb-filter-label {
+  font-size: 12px;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+.kb-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 1.5em;
 }
 
-.kb-pinned-card {
+.kb-article-card {
   border: 1px solid #ddd;
   border-radius: 6px;
   padding: 12px 14px;
   background: #fff;
 }
 
-.kb-pinned-card h3 {
+.kb-article-card h3 {
   margin: 2px 0 6px;
   font-size: 15px;
 }
 
-.kb-pinned-card-category {
+.kb-article-card-category {
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.55;
 }
 
-.kb-pinned-card-meta {
+.kb-article-card-meta {
   font-size: 12px;
   opacity: 0.65;
   margin-bottom: 6px;
 }
 
-.kb-pinned-card-tags span.tag {
+.kb-article-card-tags span.tag {
   margin-right: 4px;
+}
+
+.kb-category-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5em;
+}
+
+.kb-category-card {
+  display: block;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 14px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+}
+
+.kb-category-card:hover {
+  border-color: #205081;
+}
+
+.kb-category-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.kb-category-card-count {
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 /* Admin: category/tag management nav and tree */
@@ -364,6 +465,13 @@ table.kb-article-table .kb-article-tags span.tag {
   padding: 4px 2px;
   font-size: 14px;
   background: transparent;
+  font-family: inherit;
+  /* Most block rows are a <textarea> now (so Shift+Enter can show a real
+     line break while editing) sized to look like a plain single-line field
+     until it actually grows - resize handle and scrollbar would break that. */
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
 }
 
 .kb-block-input:focus {
@@ -404,6 +512,39 @@ table.kb-article-table .kb-article-tags span.tag {
   font-size: 12px;
   opacity: 0.7;
 }
+
+/* Floating inline-formatting toolbar (bold/italic/underline/strike) */
+
+.kb-inline-toolbar {
+  position: fixed;
+  z-index: 4000;
+  display: flex;
+  gap: 2px;
+  background: #222;
+  border-radius: 5px;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.kb-inline-toolbar-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  min-width: 26px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.kb-inline-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.kb-inline-toolbar-btn[data-fmt="b"] { font-weight: 700; }
+.kb-inline-toolbar-btn[data-fmt="i"] { font-style: italic; }
+.kb-inline-toolbar-btn[data-fmt="u"] { text-decoration: underline; }
+.kb-inline-toolbar-btn[data-fmt="x"] { text-decoration: line-through; }
 
 .kb-block-divider {
   padding: 10px 0;
@@ -719,6 +860,19 @@ table.kb-block-table th input {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   padding: 4px;
   z-index: 9999;
+}
+
+.kb-slash-group-label {
+  padding: 6px 8px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.kb-slash-group-label:first-child {
+  padding-top: 2px;
 }
 
 .kb-slash-item {

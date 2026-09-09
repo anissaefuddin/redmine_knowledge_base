@@ -13,12 +13,19 @@
   <strong><%= l(:label_kb_tag_plural) %></strong>
 </p>
 
+<%= form_tag(kb_tags_path, method: :get, class: 'kb-search-form') do %>
+  <%= text_field_tag :q, @q, placeholder: l(:label_kb_tag_search_placeholder) %>
+  <%= submit_tag l(:button_apply), name: nil %>
+<% end %>
+
+<div class="kb-list-count"><%= l(:label_kb_tag_count, count: @tag_pages.item_count) %></div>
+
 <% if @tags.any? %>
   <table class="list">
     <thead>
       <tr>
-        <th><%= l(:field_name) %></th>
-        <th><%= l(:label_kb_article_plural) %></th>
+        <%= sort_header_tag('name', caption: l(:field_name)) %>
+        <%= sort_header_tag('articles', caption: l(:label_kb_article_plural), default_order: 'desc') %>
         <th></th>
       </tr>
     </thead>
@@ -26,7 +33,7 @@
       <% @tags.each do |tag| %>
         <tr>
           <td><%= tag.name %></td>
-          <td><%= tag.kb_articles.count %></td>
+          <td><%= link_to tag.articles_count, knowledge_base_path(tag_ids: [tag.id]) %></td>
           <td class="buttons">
             <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_tag_path(tag), class: 'icon icon-edit' %>
             <%= delete_link kb_tag_path(tag) %>
@@ -35,6 +42,7 @@
       <% end %>
     </tbody>
   </table>
+  <p class="pagination"><%= pagination_links_full @tag_pages %></p>
 <% else %>
   <p class="nodata"><%= l(:label_no_data) %></p>
 <% end %>

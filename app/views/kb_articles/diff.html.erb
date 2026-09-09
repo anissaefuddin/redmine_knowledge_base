@@ -1,0 +1,26 @@
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+  <% @breadcrumb.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
+  / <%= link_to @article.title, kb_article_path(@article) %>
+  / <%= link_to l(:label_kb_history), history_kb_article_path(@article) %>
+  / <%= l(:label_kb_compare) %>
+</div>
+
+<h2><%= l(:label_kb_compare) %>: <%= @article.title %></h2>
+
+<p>
+  <%= l(:label_kb_version, number: @version.version) %>
+  <em>(<%= link_to_user(@version.author) %>, <%= format_time(@version.created_at) %>)</em>
+  &#8594;
+  <%= l(:label_kb_version, number: @article.version) %> (<%= l(:label_kb_current_version) %>)
+  <em>(<%= link_to_user(@article.updated_by || @article.author) %>, <%= format_time(@article.updated_at) %>)</em>
+</p>
+
+<pre class="text-diff"><%= Redmine::Helpers::Diff.new(@article.content, @version.content).to_html %></pre>
+
+<p>
+  <%= link_to l(:label_kb_history), history_kb_article_path(@article) %> |
+  <%= link_to l(:button_back), kb_article_path(@article) %>
+</p>
+
+<% html_title l(:label_kb_compare), @article.title, l(:label_knowledge_base) %>

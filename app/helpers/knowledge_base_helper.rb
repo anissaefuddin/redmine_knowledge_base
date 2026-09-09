@@ -27,6 +27,15 @@ module KnowledgeBaseHelper
     article.published? ? 'kb-status-published' : 'kb-status-draft'
   end
 
+  # Status is a lifecycle state, not metadata like tags - render it as a
+  # dot-indicator badge so it's visually distinct from tag pills instead of
+  # looking like just another tag.
+  def kb_status_badge(article)
+    content_tag(:span, class: "kb-status-badge #{kb_status_css_class(article)}") do
+      content_tag(:span, '', class: 'kb-status-dot') + kb_status_label(article)
+    end
+  end
+
   # "Restricted to groups: X, Y — Roles: A, B", assembled from only
   # whichever of the two restriction axes the category actually has
   # configured (see KbCategory#visible?).

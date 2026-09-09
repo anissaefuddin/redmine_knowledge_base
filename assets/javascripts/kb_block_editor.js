@@ -10,29 +10,96 @@
 (function () {
   'use strict';
 
+  // Grouped the way Notion-style slash menus are, so the list stays
+  // scannable as more block types get added over time - see BLOCK_GROUPS
+  // below for the display order/labels of each group.
   var BLOCK_TYPES = [
-    { type: 'h1', label: 'Big heading', hint: 'H1' },
-    { type: 'h2', label: 'Medium heading', hint: 'H2' },
-    { type: 'h3', label: 'Small heading', hint: 'H3' },
-    { type: 'todo', label: 'Todo list', hint: '☑' },
-    { type: 'bullet', label: 'Bulleted list', hint: '•' },
-    { type: 'numbered', label: 'Ordered list', hint: '1.' },
-    { type: 'quote', label: 'Kutipan', hint: '❝' },
-    { type: 'divider', label: 'Divider', hint: '—' },
-    { type: 'codeblock', label: 'Code block', hint: '</>' },
-    { type: 'table', label: 'Table', hint: '▦' },
-    { type: 'callout', label: 'Callout', hint: '❕' },
-    { type: 'math', label: 'Math equation', hint: '∑' },
-    { type: 'mermaid', label: 'Diagram (Mermaid)', hint: '◇' },
-    { type: 'image', label: 'Image', hint: '▣' },
-    { type: 'video', label: 'Video', hint: '▶' },
-    { type: 'gdoc', label: 'Embed Google Docs/Sheets/Slides', hint: 'G' }
+    { type: 'h1', label: 'Big heading', hint: 'H1', group: 'basic' },
+    { type: 'h2', label: 'Medium heading', hint: 'H2', group: 'basic' },
+    { type: 'h3', label: 'Small heading', hint: 'H3', group: 'basic' },
+    { type: 'bullet', label: 'Bulleted list', hint: '•', group: 'basic' },
+    { type: 'numbered', label: 'Ordered list', hint: '1.', group: 'basic' },
+    { type: 'todo', label: 'Todo list', hint: '☑', group: 'basic' },
+    { type: 'quote', label: 'Quote', hint: '❝', group: 'basic' },
+    { type: 'divider', label: 'Divider', hint: '—', group: 'basic' },
+    { type: 'table', label: 'Table', hint: '▦', group: 'content' },
+    { type: 'callout', label: 'Callout', hint: '❕', group: 'content' },
+    { type: 'codeblock', label: 'Code block', hint: '</>', group: 'content' },
+    { type: 'math', label: 'Math equation', hint: '∑', group: 'content' },
+    { type: 'image', label: 'Image', hint: '▣', group: 'media' },
+    { type: 'video', label: 'Video', hint: '▶', group: 'media' },
+    { type: 'gdoc', label: 'Embed Google Docs/Sheets/Slides', hint: 'G', group: 'media' },
+    { type: 'mermaid', label: 'Diagram (Mermaid)', hint: '◇', group: 'advanced' }
+  ];
+
+  var BLOCK_GROUPS = [
+    { key: 'basic', label: 'Basic' },
+    { key: 'content', label: 'Content' },
+    { key: 'media', label: 'Media' },
+    { key: 'advanced', label: 'Advanced' }
   ];
 
   var CALLOUT_VARIANTS = ['note', 'tip', 'important', 'warning', 'caution'];
   var LIST_TYPES = { bullet: true, numbered: true, todo: true };
+  // Block types where a non-empty Enter should keep producing more of the
+  // same type (a new list item, another quote line, another callout line)
+  // instead of always dropping back to a plain paragraph. An empty Enter on
+  // any of these still exits to a paragraph (or outdents first, for lists).
+  var CONTINUABLE_TYPES = { bullet: true, numbered: true, todo: true, quote: true, callout: true };
+  // Block types where Shift+Enter inserts a soft line break WITHIN the
+  // block's own text (rendered as <br> on publish) instead of doing
+  // whatever plain Enter does. Left out for h1/h2/h3 (ATX headings can't
+  // span lines) and image/video/math/gdoc (single-value URL/expression
+  // fields) - Shift+Enter there just falls back to the plain-Enter action.
+  var SOFT_BREAK_TYPES = { paragraph: true, quote: true, callout: true, bullet: true, numbered: true, todo: true };
   var LIST_INDENT_UNIT = 4; // spaces per nesting level in the serialized Markdown
   var MAX_INDENT = 4;
+
+  // Inline text formatting applied to a selection inside a block's text
+  // input. Markers are chosen so bold/italic/underline/strike never share a
+  // delimiter character with each other - that's what lets them nest/combine
+  // correctly (e.g. selecting already-bolded text and applying italic on top
+  // of it) instead of the toggle-detection logic getting confused about
+  // which marker it's looking at.
+  var INLINE_FORMATS = [
+    { key: 'b', open: '**', close: '**', label: 'B', fmt: 'b', title: 'Bold (Ctrl/Cmd+B)' },
+    { key: 'i', open: '_', close: '_', label: 'I', fmt: 'i', title: 'Italic (Ctrl/Cmd+I)' },
+    { key: 'u', open: '<u>', close: '</u>', label: 'U', fmt: 'u', title: 'Underline (Ctrl/Cmd+U)' },
+    { key: 'x', open: '~~', close: '~~', label: 'S', fmt: 'x', shift: true, title: 'Strikethrough (Ctrl/Cmd+Shift+X)' }
+  ];
+
+  // Wraps (or unwraps, toggle-style) the current selection of a text <input>
+  // with a Markdown marker pair. Works whether the marker sits inside the
+  // selection (selecting "**bold**" itself) or just outside it (selection is
+  // "bold", markers are the two neighboring characters) - and combines
+  // cleanly with other markers already present, in or around the selection.
+  function wrapSelection(input, open, close) {
+    var start = input.selectionStart;
+    var end = input.selectionEnd;
+    var value = input.value;
+    var selected = value.slice(start, end);
+    var before = value.slice(0, start);
+    var after = value.slice(end);
+
+    var innerWrapped = selected.length >= open.length + close.length &&
+      selected.slice(0, open.length) === open &&
+      selected.slice(selected.length - close.length) === close;
+    var outerWrapped = !innerWrapped &&
+      before.slice(before.length - open.length) === open &&
+      after.slice(0, close.length) === close;
+
+    if (innerWrapped) {
+      var inner = selected.slice(open.length, selected.length - close.length);
+      input.value = before + inner + after;
+      input.setSelectionRange(start, start + inner.length);
+    } else if (outerWrapped) {
+      input.value = before.slice(0, before.length - open.length) + selected + after.slice(close.length);
+      input.setSelectionRange(start - open.length, end - open.length);
+    } else {
+      input.value = before + open + selected + close + after;
+      input.setSelectionRange(start + open.length, start + open.length + selected.length);
+    }
+  }
 
   function newBlock(type) {
     if (type === 'table') return { type: 'table', rows: [['Header 1', 'Header 2'], ['', '']], checked: false, indent: 0 };
@@ -89,7 +156,15 @@
       },
       body: file
     }).then(function (res) {
-      if (!res.ok) throw new Error('Upload gagal (' + res.status + ')');
+      if (!res.ok) {
+        if (res.status === 403) {
+          throw new Error('You don\'t have permission to upload files. Ask an administrator to grant you the knowledge base article-editing permission.');
+        }
+        if (res.status === 413) {
+          throw new Error('This file is too large to upload.');
+        }
+        throw new Error('Upload failed (' + res.status + '). Please try again.');
+      }
       return res.json();
     }).then(function (json) {
       return { filename: filename, token: json.upload.token, id: json.upload.id };
@@ -114,6 +189,11 @@
     var lines = (text || '').replace(/\r\n/g, '\n').split('\n');
     var blocks = [];
     var i = 0;
+    // Index of the last raw line that was folded into blocks (used below to
+    // detect "this line directly follows the previous one, no blank line in
+    // between" - i.e. a Shift+Enter soft break rather than a deliberate new
+    // paragraph, which always has a blank line separating it).
+    var prevLineIndex = -2;
 
     while (i < lines.length) {
       var line = lines[i];
@@ -144,7 +224,7 @@
           calloutLines.push(lines[i].replace(/^>\s?/, ''));
           i++;
         }
-        blocks.push({ type: 'callout', variant: variant, text: calloutLines.join(' '), checked: false, indent: 0 });
+        blocks.push({ type: 'callout', variant: variant, text: calloutLines.join('\n'), checked: false, indent: 0 });
         continue;
       }
 
@@ -174,8 +254,24 @@
       else if ((m = /^\[video\]\(([^)]*)\)$/.exec(line))) blocks.push({ type: 'video', text: m[1], checked: false, indent: 0 });
       else if ((m = /^\[embed:gdoc\]\(([^)]*)\)$/.exec(line))) blocks.push({ type: 'gdoc', text: m[1], checked: false, indent: 0 });
       else if ((m = /^\$\$(.+)\$\$$/.exec(line))) blocks.push({ type: 'math', text: m[1], checked: false, indent: 0 });
-      else blocks.push({ type: 'paragraph', text: line, checked: false, indent: 0 });
+      else {
+        // A plain, unmarked line that directly follows (no blank line
+        // between) a paragraph or list item is that block's own Shift+Enter
+        // soft break, not a new block - CommonMark's lazy-continuation rule
+        // agrees (see the lineFor comment on quote/list serialization for
+        // why quote doesn't need this same merge). Undoes exactly what
+        // serialize() produces for a soft break, so save -> reload -> save
+        // is stable and doesn't turn a break into a real new paragraph.
+        var lastBlock = blocks[blocks.length - 1];
+        var mergeable = lastBlock && (lastBlock.type === 'paragraph' || LIST_TYPES[lastBlock.type]) && prevLineIndex === i - 1;
+        if (mergeable) {
+          lastBlock.text += '\n' + line;
+        } else {
+          blocks.push({ type: 'paragraph', text: line, checked: false, indent: 0 });
+        }
+      }
 
+      prevLineIndex = i;
       i++;
     }
 
@@ -192,8 +288,14 @@
       case 'todo': return indentStr + '- [' + (block.checked ? 'x' : ' ') + '] ' + block.text;
       case 'bullet': return indentStr + '- ' + block.text;
       case 'numbered': return indentStr + '1. ' + block.text;
-      case 'quote': return '> ' + block.text;
-      case 'callout': return '> [!' + (block.variant || 'note').toUpperCase() + ']\n> ' + block.text;
+      // Every physical line gets its own '>' prefix (not just the first),
+      // so a Shift+Enter soft break inside one quote/callout block survives
+      // a reload as a stable, self-consistent shape under our own parser -
+      // see the parseMarkdown comment on the quote/callout branches.
+      case 'quote': return block.text.split('\n').map(function (l) { return '> ' + l; }).join('\n');
+      case 'callout':
+        return '> [!' + (block.variant || 'note').toUpperCase() + ']\n' +
+          block.text.split('\n').map(function (l) { return '> ' + l; }).join('\n');
       case 'math': return '$$' + block.text + '$$';
       case 'divider': return '---';
       case 'codeblock': return '```' + (block.language || '') + '\n' + block.text + '\n```';
@@ -215,7 +317,12 @@
     blocks.forEach(function (block, i) {
       var prev = blocks[i - 1];
       var sameListRun = prev && LIST_TYPES[block.type] && LIST_TYPES[prev.type];
-      if (i > 0 && !sameListRun) lines.push('');
+      // Consecutive quote blocks (produced by pressing Enter inside a quote)
+      // must NOT get a blank line between them, or each one becomes its own
+      // separate blockquote in Markdown instead of one continuous quote with
+      // multiple lines - same reasoning as sameListRun above.
+      var sameQuoteRun = prev && block.type === 'quote' && prev.type === 'quote';
+      if (i > 0 && !sameListRun && !sameQuoteRun) lines.push('');
       lines.push(lineFor(block));
     });
     return lines.join('\n');
@@ -245,8 +352,10 @@
 
     this.initialSerialized = textarea.value;
     this.submitting = false;
+    this.inlineToolbarEl = null;
     this.bindDropZone();
     this.bindUnsavedChangesGuard();
+    this.bindInlineFormatting();
     this.render();
   }
 
@@ -321,18 +430,22 @@
     this.focusBlock(focusIndex);
   };
 
-  // ---- Enter/Tab handling for list-type blocks (bullet/numbered/todo) ----
+  // ---- Enter handling for "continuable" blocks (lists, quote, callout) ----
   //
-  // Enter on a non-empty list item continues the same list (new sibling
-  // item, same type and indent). Enter on an EMPTY item "pops" it: one
-  // level of indent is removed and it keeps being a list item, or - if
-  // already at the top level - it becomes a plain paragraph, exiting the
-  // list entirely. That is what makes pressing Enter twice on the last
-  // sub-item land back in the parent list, and a third time exit to text.
-  KbBlockEditor.prototype.handleListEnter = function (index) {
+  // Enter on a non-empty item continues the same block type (new sibling
+  // item/line, same type and indent). Enter on an EMPTY item "pops" it: for
+  // list types, one level of indent is removed and it keeps being a list
+  // item, or - if already at the top level (true for quote/callout too,
+  // which never carry indent) - it becomes a plain paragraph, exiting the
+  // block entirely. That is what makes pressing Enter twice on the last
+  // sub-item land back in the parent list, and a third time exit to text -
+  // and, for quote/callout, a single Enter on an empty line exits to text.
+  KbBlockEditor.prototype.handleContinuableEnter = function (index) {
     var block = this.blocks[index];
     if (block.text !== '') {
-      this.insertAfter(index, { type: block.type, text: '', checked: false, indent: block.indent });
+      var next = { type: block.type, text: '', checked: false, indent: block.indent || 0 };
+      if (block.type === 'callout') next.variant = block.variant;
+      this.insertAfter(index, next);
       return;
     }
     if (block.indent > 0) {
@@ -343,6 +456,7 @@
     } else {
       block.type = 'paragraph';
       delete block.checked;
+      delete block.variant;
       this.sync();
       this.render();
       this.focusBlock(index);
@@ -387,23 +501,36 @@
     if (matches.length === 0) {
       var empty = document.createElement('div');
       empty.className = 'kb-slash-empty';
-      empty.textContent = 'Tidak ada perintah cocok';
+      empty.textContent = 'No matching blocks';
       menu.appendChild(empty);
     } else {
-      matches.forEach(function (c) {
-        var item = document.createElement('div');
-        item.className = 'kb-slash-item';
-        var hint = document.createElement('span');
-        hint.className = 'kb-slash-hint';
-        hint.textContent = c.hint;
-        item.appendChild(hint);
-        item.appendChild(document.createTextNode(c.label));
-        item.addEventListener('mousedown', function (e) {
-          e.preventDefault();
-          self.closeSlashMenu();
-          onPick(c.type);
+      // Group headers only appear above a group that actually has a match
+      // left after filtering, so typing "/image" collapses straight down to
+      // the Media group instead of showing every empty header too.
+      BLOCK_GROUPS.forEach(function (g) {
+        var inGroup = matches.filter(function (c) { return c.group === g.key; });
+        if (inGroup.length === 0) return;
+
+        var heading = document.createElement('div');
+        heading.className = 'kb-slash-group-label';
+        heading.textContent = g.label;
+        menu.appendChild(heading);
+
+        inGroup.forEach(function (c) {
+          var item = document.createElement('div');
+          item.className = 'kb-slash-item';
+          var hint = document.createElement('span');
+          hint.className = 'kb-slash-hint';
+          hint.textContent = c.hint;
+          item.appendChild(hint);
+          item.appendChild(document.createTextNode(c.label));
+          item.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            self.closeSlashMenu();
+            onPick(c.type);
+          });
+          menu.appendChild(item);
         });
-        menu.appendChild(item);
       });
     }
 
@@ -564,23 +691,121 @@
     });
   };
 
+  // ---- Inline formatting (bold/italic/underline/strike) ----
+  //
+  // A small floating toolbar shows above any block text input while text is
+  // selected inside it, and the same four styles are reachable via
+  // Ctrl/Cmd+B/I/U and Ctrl/Cmd+Shift+X regardless of whether the toolbar is
+  // visible. Both paths funnel through applyInlineFormat/wrapSelection, so
+  // styles combine freely (bold+italic, bold+underline, etc.) - see the
+  // wrapSelection comment for why that nesting works.
+
+  function isFormattableInput(el) {
+    return !!el && el.classList && el.classList.contains('kb-block-input') &&
+      (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'));
+  }
+
+  KbBlockEditor.prototype.hideInlineToolbar = function () {
+    if (this.inlineToolbarEl) {
+      this.inlineToolbarEl.remove();
+      this.inlineToolbarEl = null;
+    }
+  };
+
+  KbBlockEditor.prototype.showInlineToolbar = function (input) {
+    var self = this;
+    this.hideInlineToolbar();
+
+    var toolbar = document.createElement('div');
+    toolbar.className = 'kb-inline-toolbar';
+    INLINE_FORMATS.forEach(function (spec) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'kb-inline-toolbar-btn';
+      btn.setAttribute('data-fmt', spec.fmt);
+      btn.textContent = spec.label;
+      btn.title = spec.title;
+      // mousedown (not click) + preventDefault keeps the input focused and
+      // its selection intact right up until we read it in applyInlineFormat.
+      btn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        self.applyInlineFormat(input, spec);
+      });
+      toolbar.appendChild(btn);
+    });
+
+    document.body.appendChild(toolbar);
+    var rect = input.getBoundingClientRect();
+    var toolbarWidth = toolbar.offsetWidth;
+    var left = rect.left + (rect.width - toolbarWidth) / 2;
+    toolbar.style.left = Math.max(4, left) + 'px';
+    toolbar.style.top = (rect.top - toolbar.offsetHeight - 6) + 'px';
+    this.inlineToolbarEl = toolbar;
+  };
+
+  KbBlockEditor.prototype.applyInlineFormat = function (input, spec) {
+    wrapSelection(input, spec.open, spec.close);
+    input.focus();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  KbBlockEditor.prototype.bindInlineFormatting = function () {
+    var self = this;
+
+    document.addEventListener('selectionchange', function () {
+      var active = document.activeElement;
+      if (!isFormattableInput(active) || !self.container.contains(active) || active.selectionStart === active.selectionEnd) {
+        self.hideInlineToolbar();
+        return;
+      }
+      self.showInlineToolbar(active);
+    });
+
+    this.container.addEventListener('keydown', function (e) {
+      if (!isFormattableInput(e.target)) return;
+      var mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      var key = e.key.toLowerCase();
+      var spec = null;
+      for (var i = 0; i < INLINE_FORMATS.length; i++) {
+        if (INLINE_FORMATS[i].key === key && !!INLINE_FORMATS[i].shift === e.shiftKey) {
+          spec = INLINE_FORMATS[i];
+          break;
+        }
+      }
+      if (!spec) return;
+      e.preventDefault();
+      self.applyInlineFormat(e.target, spec);
+    });
+  };
+
   // Renders a single-line text block (paragraph/heading/list/quote/image/video/gdoc).
+  // A <textarea> (not <input>) so a type in SOFT_BREAK_TYPES can actually
+  // show a Shift+Enter break while editing, not just when published - see
+  // growTextRow and the Enter handling below. CSS makes it look and behave
+  // like a plain single-line field until it actually grows past one line.
+  function growTextRow(el) {
+    el.rows = Math.max(1, el.value.split('\n').length);
+  }
+
   KbBlockEditor.prototype.buildTextRow = function (block, index) {
     var self = this;
-    var input = document.createElement('input');
-    input.type = 'text';
+    var input = document.createElement('textarea');
     input.className = 'kb-block-input';
     input.setAttribute('data-block-index', index);
     input.value = block.text;
-    if (block.type === 'image') input.placeholder = block.uploading ? 'Mengunggah gambar…' : 'Tempel URL, atau paste/drop gambar langsung…';
-    if (block.type === 'video') input.placeholder = 'Tempel URL video…';
-    if (block.type === 'math') input.placeholder = 'Rumus LaTeX, mis. E = mc^2…';
-    if (block.type === 'gdoc') input.placeholder = 'Link Google Docs/Sheets/Slides (pastikan sharing "Anyone with the link")…';
+    input.rows = 1;
+    if (block.type === 'image') input.placeholder = block.uploading ? 'Uploading image…' : 'Paste an image URL, or paste/drop an image directly…';
+    if (block.type === 'video') input.placeholder = 'Paste a video URL…';
+    if (block.type === 'math') input.placeholder = 'LaTeX formula, e.g. E = mc^2…';
+    if (block.type === 'gdoc') input.placeholder = 'Google Docs/Sheets/Slides link (make sure sharing is set to "Anyone with the link")…';
     if (block.uploading) input.disabled = true;
+    if (SOFT_BREAK_TYPES[block.type]) growTextRow(input);
 
     input.addEventListener('input', function () {
       block.text = input.value;
       self.sync();
+      if (SOFT_BREAK_TYPES[block.type]) growTextRow(input);
       var m = /^\/([a-z0-9]*)$/i.exec(input.value);
       if (m) {
         self.openSlashMenu(input, m[1].toLowerCase(), function (type) {
@@ -593,9 +818,10 @@
 
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !self.slashMenuEl) {
+        if (e.shiftKey && SOFT_BREAK_TYPES[block.type]) return; // let the browser insert the newline
         e.preventDefault();
-        if (LIST_TYPES[block.type]) {
-          self.handleListEnter(index);
+        if (CONTINUABLE_TYPES[block.type]) {
+          self.handleContinuableEnter(index);
         } else {
           self.insertAfter(index, newBlock('paragraph'));
         }
@@ -621,7 +847,7 @@
     var lang = document.createElement('input');
     lang.type = 'text';
     lang.className = 'kb-block-code-lang';
-    lang.placeholder = 'bahasa (mis. bash, ruby, mermaid)…';
+    lang.placeholder = 'language (e.g. bash, ruby, mermaid)…';
     lang.value = block.language || '';
 
     var preview = null;
@@ -641,7 +867,7 @@
         }).catch(function (err) {
           if (seq === renderSeq) {
             preview.innerHTML = '';
-            preview.textContent = 'Diagram belum valid: ' + (err && err.message ? err.message : err);
+            preview.textContent = 'Invalid diagram: ' + (err && err.message ? err.message : err);
             preview.classList.add('kb-mermaid-preview-error');
           }
         });
@@ -688,8 +914,15 @@
 
     var table = document.createElement('table');
     table.className = 'kb-block-table';
+    // Indexed the same shape as block.rows, so Enter can jump to "the same
+    // column, one row down" - a plain <input> has no row/table awareness of
+    // its own, and without this it would fall through to the browser's
+    // default behavior for Enter in a form field, which is to submit the
+    // form (there's nothing else here to prevent that).
+    var cellInputsByRow = [];
     block.rows.forEach(function (row, ri) {
       var tr = document.createElement('tr');
+      var rowInputs = [];
       row.forEach(function (cellText, ci) {
         var td = document.createElement(ri === 0 ? 'th' : 'td');
         var cellInput = document.createElement('input');
@@ -700,9 +933,17 @@
           block.rows[ri][ci] = cellInput.value;
           self.sync();
         });
+        cellInput.addEventListener('keydown', function (e) {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          var nextRow = cellInputsByRow[ri + 1];
+          if (nextRow && nextRow[ci]) nextRow[ci].focus();
+        });
+        rowInputs.push(cellInput);
         td.appendChild(cellInput);
         tr.appendChild(td);
       });
+      cellInputsByRow.push(rowInputs);
       table.appendChild(tr);
     });
 
@@ -755,17 +996,23 @@
       self.focusBlock(index);
     });
 
-    var input = document.createElement('input');
-    input.type = 'text';
+    var input = document.createElement('textarea');
     input.className = 'kb-block-input';
     input.setAttribute('data-block-index', index);
     input.value = block.text;
-    input.placeholder = 'Teks callout…';
-    input.addEventListener('input', function () { block.text = input.value; self.sync(); });
+    input.rows = 1;
+    input.placeholder = 'Callout text…';
+    growTextRow(input);
+    input.addEventListener('input', function () {
+      block.text = input.value;
+      self.sync();
+      growTextRow(input);
+    });
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
+        if (e.shiftKey) return; // let the browser insert the newline
         e.preventDefault();
-        self.insertAfter(index, newBlock('paragraph'));
+        self.handleContinuableEnter(index);
       } else if (e.key === 'Backspace' && input.value === '' && self.blocks.length > 1) {
         e.preventDefault();
         self.removeAt(index);
@@ -834,6 +1081,7 @@
   KbBlockEditor.prototype.render = function () {
     this.container.innerHTML = '';
     this.slashMenuEl = null;
+    this.hideInlineToolbar();
     var self = this;
     var numCounters = {};
 
@@ -894,7 +1142,7 @@
       del.type = 'button';
       del.className = 'kb-block-delete';
       del.textContent = '×';
-      del.setAttribute('aria-label', 'Hapus blok');
+      del.setAttribute('aria-label', 'Delete block');
       del.addEventListener('click', function () { self.removeAt(index); });
       row.appendChild(del);
 
@@ -905,7 +1153,7 @@
     adder.className = 'kb-block-adder';
     var adderInput = document.createElement('input');
     adderInput.type = 'text';
-    adderInput.placeholder = "Ketik '/' untuk sisipkan blok…";
+    adderInput.placeholder = "Type '/' to search blocks…";
 
     adderInput.addEventListener('input', function () {
       var m = /^\/([a-z0-9]*)$/i.exec(adderInput.value);

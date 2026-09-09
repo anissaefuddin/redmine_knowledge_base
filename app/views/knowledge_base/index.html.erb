@@ -4,70 +4,135 @@
 </div>
 
 <h2><%= l(:label_knowledge_base) %></h2>
+<p class="kb-tagline"><%= l(:text_kb_tagline) %></p>
 
 <%= form_tag(knowledge_base_path, method: :get, class: 'kb-search-form') do %>
-  <%= text_field_tag :q, @q, size: 40, placeholder: l(:label_search) %>
+  <%= text_field_tag :q, @q, size: 40, placeholder: l(:label_kb_global_search_placeholder) %>
+  <% @category_ids.each do |cid| %><%= hidden_field_tag 'category_ids[]', cid %><% end %>
+  <% @tag_ids.each do |tid| %><%= hidden_field_tag 'tag_ids[]', tid %><% end %>
+  <% @status_filter.each do |s| %><%= hidden_field_tag 'status[]', s %><% end %>
   <%= submit_tag l(:button_apply), name: nil %>
 <% end %>
 
-<% if @articles %>
-  <h3><%= l(:label_search) %>: "<%= @q %>"</h3>
+<% if @searching %>
+  <div class="kb-list-header">
+    <div class="kb-list-count"><%= l(:label_kb_result_count, count: @result_pages.item_count) %></div>
+  </div>
+
+  <% if @filterable_categories.any? %>
+    <div class="kb-filter-group">
+      <span class="kb-filter-label"><%= l(:label_kb_category_plural) %>:</span>
+      <div class="kb-tag-chips">
+        <% @filterable_categories.each do |cat| %>
+          <% active = @category_ids.include?(cat.id) %>
+          <% new_ids = active ? (@category_ids - [cat.id]) : (@category_ids + [cat.id]) %>
+          <%= link_to cat.name, knowledge_base_path(q: @q, category_ids: new_ids, tag_ids: @tag_ids, status: @status_filter),
+                      class: "tag #{active ? 'tag-accent' : 'tag-outline'}" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @filterable_tags.any? %>
+    <div class="kb-filter-group">
+      <span class="kb-filter-label"><%= l(:label_kb_tag_plural) %>:</span>
+      <div class="kb-tag-chips">
+        <% @filterable_tags.each do |tag| %>
+          <% active = @tag_ids.include?(tag.id) %>
+          <% new_ids = active ? (@tag_ids - [tag.id]) : (@tag_ids + [tag.id]) %>
+          <%= link_to tag.name, knowledge_base_path(q: @q, category_ids: @category_ids, tag_ids: new_ids, status: @status_filter),
+                      class: "tag #{active ? 'tag-accent' : 'tag-outline'}" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if kb_manage_articles? %>
+    <div class="kb-filter-group">
+      <span class="kb-filter-label"><%= l(:field_status) %>:</span>
+      <div class="kb-tag-chips">
+        <% %w[draft published].each do |s| %>
+          <% active = @status_filter.include?(s) %>
+          <% new_status = active ? (@status_filter - [s]) : (@status_filter + [s]) %>
+          <%= link_to l("label_kb_status_#{s}".to_sym), knowledge_base_path(q: @q, category_ids: @category_ids, tag_ids: @tag_ids, status: new_status),
+                      class: "tag #{active ? 'tag-accent' : 'tag-outline'}" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
   <% if @articles.any? %>
-    <table class="list">
+    <table class="list kb-article-table">
+      <thead>
+        <tr>
+          <%= sort_header_tag('title', caption: l(:field_subject)) %>
+          <th><%= l(:field_status) %></th>
+          <th><%= l(:label_kb_category) %></th>
+          <th><%= l(:label_kb_tag_plural) %></th>
+          <%= sort_header_tag('updated_on', caption: l(:field_updated_on)) %>
+          <%= sort_header_tag('views', caption: l(:label_kb_views), default_order: 'desc') %>
+        </tr>
+      </thead>
       <tbody>
         <% @articles.each do |article| %>
           <tr>
             <td><%= link_to article.title, kb_article_path(article) %></td>
-            <td><span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span></td>
-            <td><%= article.kb_category.name %></td>
+            <td><%= kb_status_badge(article) %></td>
+            <td class="text-muted"><%= article.kb_category.name %></td>
+            <td class="kb-article-tags">
+              <% article.tags.each do |t| %><span class="tag tag-outline"><%= t.name %></span><% end %>
+            </td>
+            <td class="text-muted"><%= format_time(article.updated_at) %></td>
+            <td class="text-right"><%= article.views_count %></td>
           </tr>
         <% end %>
       </tbody>
     </table>
   <% else %>
-    <p class="nodata"><%= l(:label_no_data) %></p>
+    <p class="nodata"><%= l(:text_kb_no_articles_matching) %></p>
   <% end %>
-  <hr>
-<% end %>
 
-<div class="kb-layout">
-  <aside class="kb-sidebar">
-    <div class="kb-sidebar-title"><%= l(:label_kb_category_plural) %></div>
-    <% if @root_categories.blank? %>
-      <p class="nodata"><%= l(:text_kb_no_categories) %></p>
-    <% else %>
-      <div class="kb-tree">
-        <%= render partial: 'kb_categories/tree', locals: { nodes: @root_categories, counts: @counts_by_category_id, active_id: nil, depth: 0 } %>
-      </div>
-    <% end %>
-  </aside>
+  <p class="pagination"><%= pagination_links_full @result_pages %></p>
 
-  <main class="kb-main">
-    <% if @pinned_articles.any? %>
-      <div class="kb-sidebar-title"><%= l(:label_kb_pinned_articles) %></div>
-      <div class="kb-pinned-grid">
-        <% @pinned_articles.each do |article| %>
-          <div class="kb-pinned-card">
-            <div class="kb-pinned-card-category"><%= article.kb_category.name %></div>
-            <h3><%= link_to article.title, kb_article_path(article) %></h3>
-            <div class="kb-pinned-card-meta">
-              <%= l(:label_kb_last_updated_by,
-                    author: link_to_user(article.updated_by || article.author),
-                    date: format_time(article.updated_at)).html_safe %>
-              <% if kb_manage_articles? %> &middot; <span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span><% end %>
-            </div>
-            <% if article.tags.any? %>
-              <div class="kb-pinned-card-tags">
-                <% article.tags.each do |t| %><span class="tag tag-outline"><%= t.name %></span><% end %>
-              </div>
-            <% end %>
-          </div>
+<% else %>
+
+  <% if @recent_articles.any? %>
+    <div class="kb-section-title"><%= l(:label_kb_recently_updated) %></div>
+    <div class="kb-card-grid">
+      <%= render partial: 'article_card', collection: @recent_articles, as: :article %>
+    </div>
+  <% end %>
+
+  <% if @popular_articles.any? %>
+    <div class="kb-section-title"><%= l(:label_kb_popular_articles) %></div>
+    <div class="kb-card-grid">
+      <%= render partial: 'article_card', collection: @popular_articles, as: :article %>
+    </div>
+  <% end %>
+
+  <div class="kb-section-title"><%= l(:label_kb_category_plural) %></div>
+  <% if @category_cards.blank? %>
+    <p class="nodata"><%= l(:text_kb_no_categories) %></p>
+  <% else %>
+    <div class="kb-category-card-grid">
+      <% @category_cards.each do |cat| %>
+        <%= link_to kb_category_path(cat), class: 'kb-category-card' do %>
+          <div class="kb-category-card-name"><%= cat.name %></div>
+          <div class="kb-category-card-count"><%= l(:label_kb_article_count, count: cat.article_count(@counts_by_category_id)) %></div>
         <% end %>
-      </div>
-    <% elsif kb_manage_articles? %>
-      <p class="nodata"><%= l(:text_kb_no_pinned_articles_admin) %></p>
-    <% end %>
-  </main>
-</div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @pinned_articles.any? %>
+    <div class="kb-section-title"><%= l(:label_kb_pinned_articles) %></div>
+    <div class="kb-card-grid">
+      <%= render partial: 'article_card', collection: @pinned_articles, as: :article %>
+    </div>
+  <% elsif kb_manage_articles? %>
+    <p class="nodata"><%= l(:text_kb_no_pinned_articles_admin) %></p>
+  <% end %>
+
+<% end %>
 
 <% html_title l(:label_knowledge_base) %>

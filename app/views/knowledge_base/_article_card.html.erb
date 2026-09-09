@@ -1,0 +1,15 @@
+<div class="kb-article-card">
+  <div class="kb-article-card-category"><%= article.kb_category.name %></div>
+  <h3><%= link_to article.title, kb_article_path(article) %></h3>
+  <div class="kb-article-card-meta">
+    <%= l(:label_kb_last_updated_by,
+          author: link_to_user(article.updated_by || article.author),
+          date: format_time(article.updated_at)).html_safe %>
+    <% if kb_edit_article?(article) %> &middot; <%= kb_status_badge(article) %><% end %>
+  </div>
+  <% if article.tags.any? %>
+    <div class="kb-article-card-tags">
+      <% article.tags.each do |t| %><span class="tag tag-outline"><%= t.name %></span><% end %>
+    </div>
+  <% end %>
+</div>

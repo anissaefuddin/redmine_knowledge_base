@@ -3,6 +3,9 @@
 class KbTagsController < ApplicationController
   include RedmineKnowledgeBase::Authorization
 
+  helper :sort
+  include SortHelper
+
   menu_item :knowledge_base
 
   before_action :require_login
@@ -10,7 +13,30 @@ class KbTagsController < ApplicationController
   before_action :find_tag, only: %i[edit update destroy]
 
   def index
-    @tags = KbTag.sorted
+    filtered = KbTag.all
+    if params[:q].present?
+      @q = params[:q].to_s.strip
+      filtered = filtered.where('LOWER(kb_tags.name) LIKE ?', "%#{@q.downcase}%")
+    end
+
+    # Count on the plain (unselected) scope - ActiveRecord's automatic
+    # count-SQL-wrapping chokes on the raw "AS articles_count" select added
+    # below, so the item count for pagination is computed separately here
+    # rather than via Redmine's `paginate` helper (which would call
+    # .count on the annotated scope).
+    @tag_pages = paginator(filtered.count)
+
+    # A correlated subquery (rather than LEFT JOIN + GROUP BY) keeps the
+    # page query one-row-per-tag, so sorting by article count is a plain
+    # ORDER BY on a real selected column instead of needing a GROUP BY.
+    articles_count_sql = KbArticleTag.where('kb_article_tags.kb_tag_id = kb_tags.id').select('COUNT(*)').to_sql
+    scope = filtered.select("kb_tags.*, (#{articles_count_sql}) AS articles_count")
+
+    sort_init 'name', 'asc'
+    sort_update('name' => 'kb_tags.name', 'position' => 'kb_tags.position', 'articles' => 'articles_count')
+    scope = scope.reorder(sort_clause)
+
+    @tags = scope.limit(@tag_pages.per_page).offset(@tag_pages.offset).to_a
   end
 
   def new

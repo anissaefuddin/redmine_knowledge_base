@@ -25,6 +25,10 @@ class KbArticle < ApplicationRecord
   enum status: { draft: 'draft', published: 'published' }
 
   scope :pinned, -> { where.not(pinned_at: nil).order(pinned_at: :desc) }
+  # Published articles, plus the given user's own drafts - so a Contributor
+  # searching the knowledge base can still find drafts they authored
+  # themselves, without exposing every other author's drafts to them.
+  scope :published_or_authored_by, ->(user) { published.or(where(author_id: user.id)) }
 
   # acts_as_attachable's default attachments_visible?/editable?/deletable? call
   # user.allowed_to?(permission, self.project) - that check only works for
@@ -41,6 +45,8 @@ class KbArticle < ApplicationRecord
 
   def visible?(user = User.current)
     return true if user.admin?
+    return true if author_id == user.id
+    return true if user.allowed_to?(:manage_kb_articles, nil, global: true)
     return false unless published?
 
     kb_category.visible?(user)
@@ -55,7 +61,9 @@ class KbArticle < ApplicationRecord
   end
 
   def editable_by?(user = User.current)
-    user.allowed_to?(:manage_kb_articles, nil, global: true)
+    return true if user.allowed_to?(:manage_kb_articles, nil, global: true)
+
+    user.allowed_to?(:edit_own_kb_articles, nil, global: true) && author_id == user.id
   end
 
   def attachments_visible?(user = User.current)

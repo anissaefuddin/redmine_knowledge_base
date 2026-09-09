@@ -13,10 +13,10 @@
     <label id="kb-status-label"><%= l(:field_status) %></label>
     <div class="kb-status-toggle" role="radiogroup" aria-labelledby="kb-status-label">
       <label class="inline">
-        <%= f.radio_button :status, 'draft' %> <%= l(:label_kb_status_draft) %>
+        <%= f.radio_button :status, 'draft', class: 'kb-status-radio' %> <%= l(:label_kb_status_draft) %>
       </label>
       <label class="inline">
-        <%= f.radio_button :status, 'published' %> <%= l(:label_kb_status_published) %>
+        <%= f.radio_button :status, 'published', class: 'kb-status-radio' %> <%= l(:label_kb_status_published) %>
       </label>
     </div>
   </div>

@@ -6,9 +6,11 @@ class KbArticlesController < ApplicationController
   menu_item :knowledge_base
 
   before_action :require_login
-  before_action :find_article, only: %i[show edit update destroy history version restore_version add_project remove_project add_related remove_related toggle_pin]
-  before_action :authorize_view, only: %i[show history version]
-  before_action :require_kb_manage_articles, only: %i[new create edit update destroy restore_version add_project remove_project add_related remove_related toggle_pin]
+  before_action :find_article, only: %i[show edit update destroy history version diff restore_version add_project remove_project add_related remove_related toggle_pin duplicate]
+  before_action :authorize_view, only: %i[show history version diff duplicate]
+  before_action :require_kb_add_articles, only: %i[new create duplicate]
+  before_action :require_kb_edit_article, only: %i[edit update]
+  before_action :require_kb_manage_articles, only: %i[destroy restore_version add_project remove_project add_related remove_related toggle_pin]
 
   helper :knowledge_base
   helper :attachments
@@ -74,6 +76,16 @@ class KbArticlesController < ApplicationController
     render_404
   end
 
+  # Word-level diff between an old version's content and the article's
+  # current live content, so a reader can see what's changed since that
+  # version without having to eyeball two full-text pages side by side.
+  def diff
+    @version = @article.kb_article_versions.find_by!(version: params[:version])
+    @breadcrumb = @article.kb_category.self_and_ancestors
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
   # Overwrites the article's current title/content with an old version's,
   # going through the normal update path so the state being replaced is
   # itself snapshotted by KbArticle#snapshot_version first - restoring is
@@ -122,6 +134,30 @@ class KbArticlesController < ApplicationController
     @article.update_column(:pinned_at, now_pinned ? Time.current : nil)
     flash[:notice] = now_pinned ? l(:notice_kb_pinned) : l(:notice_kb_unpinned)
     redirect_to kb_article_path(@article)
+  end
+
+  # Clones title/content/category/tags into a brand new draft owned by the
+  # current user, then sends them straight to editing it. Doesn't copy
+  # pin state, view count, version history, related-article/project links,
+  # or attachments - those are specific to the original article's own
+  # lifecycle, not something a copy should inherit.
+  def duplicate
+    copy = KbArticle.new(
+      title: "#{l(:text_kb_copy_of)} #{@article.title}",
+      content: @article.content,
+      kb_category_id: @article.kb_category_id,
+      status: 'draft',
+      author: User.current,
+      updated_by: User.current
+    )
+    copy.tag_ids = @article.tag_ids
+    if copy.save
+      flash[:notice] = l(:notice_successful_create)
+      redirect_to edit_kb_article_path(copy)
+    else
+      flash[:error] = copy.errors.full_messages.join(', ')
+      redirect_to kb_article_path(@article)
+    end
   end
 
   private

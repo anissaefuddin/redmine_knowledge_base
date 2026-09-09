@@ -17,9 +17,9 @@
         <h1><%= @category.name %></h1>
         <div class="kb-list-count"><%= l(:label_kb_article_count, count: @article_pages.item_count) %></div>
       </div>
-      <% if kb_manage_articles? || kb_manage_categories? %>
+      <% if kb_add_articles? || kb_manage_categories? %>
         <div class="kb-list-actions">
-          <% if kb_manage_articles? %>
+          <% if kb_add_articles? %>
             <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: @category.id), class: 'btn btn-primary icon icon-add' %>
           <% end %>
           <% if kb_manage_categories? %>
@@ -69,7 +69,7 @@
           <% @articles.each do |article| %>
             <tr>
               <td><%= link_to article.title, kb_article_path(article) %></td>
-              <td><span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span></td>
+              <td><%= kb_status_badge(article) %></td>
               <% if show_category_column %>
                 <td class="text-muted"><%= article.kb_category.name if article.kb_category_id != @category.id %></td>
               <% end %>
