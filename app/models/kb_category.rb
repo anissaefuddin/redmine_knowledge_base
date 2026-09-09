@@ -7,6 +7,8 @@ class KbCategory < ApplicationRecord
   has_many :kb_articles, -> { order(:title) }, dependent: :restrict_with_error
   has_many :kb_category_groups, dependent: :destroy
   has_many :groups, through: :kb_category_groups
+  has_many :kb_category_roles, dependent: :destroy
+  has_many :roles, through: :kb_category_roles
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }, length: { maximum: 255 }
 
@@ -35,19 +37,26 @@ class KbCategory < ApplicationRecord
     roots
   end
 
-  # Opt-in restriction: a category with no groups attached is unrestricted.
-  # Deliberately not inherited from the parent category - each node's
-  # restriction is independent, matching the pre-hierarchy behavior.
+  # Opt-in restriction: a category with no groups AND no roles attached is
+  # unrestricted. Deliberately not inherited from the parent category -
+  # each node's restriction is independent, matching the pre-hierarchy
+  # behavior.
   def restricted?
-    kb_category_groups.exists?
+    kb_category_groups.exists? || kb_category_roles.exists?
   end
 
+  # Groups and roles are two independent ways in - a restricted category is
+  # visible to a user who matches EITHER one, not both. A category with
+  # groups configured but no roles (or vice versa) simply never matches on
+  # the axis that has nothing configured.
   def visible?(user = User.current)
     return true if user.admin?
     return false unless user.allowed_to?(:view_knowledge_base, nil, global: true)
     return true unless restricted?
 
-    (user.groups.pluck(:id) & group_ids).any?
+    group_match = group_ids.present? && (user.groups.pluck(:id) & group_ids).any?
+    role_match = role_ids.present? && (user.roles.pluck(:id) & role_ids).any?
+    group_match || role_match
   end
 
   def ancestors

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class KbCategoriesController < ApplicationController
+  include RedmineKnowledgeBase::Authorization
+
   menu_item :knowledge_base
 
   helper :sort
@@ -9,7 +11,7 @@ class KbCategoriesController < ApplicationController
   before_action :require_login
   before_action :find_category, only: %i[show edit update destroy]
   before_action :authorize_view, only: %i[show]
-  before_action :require_admin, except: %i[show]
+  before_action :require_kb_manage_categories, except: %i[show]
 
   helper :knowledge_base
 
@@ -29,7 +31,7 @@ class KbCategoriesController < ApplicationController
     visible_category_ids = @category.self_and_descendants.select { |c| c.visible?(User.current) }.map(&:id)
 
     scope = KbArticle.where(kb_category_id: visible_category_ids)
-    scope = scope.published unless User.current.admin?
+    scope = scope.published unless kb_manage_articles?
     @category_total_count = scope.count
 
     if params[:q].present?
@@ -70,15 +72,18 @@ class KbCategoriesController < ApplicationController
 
   def edit
     @all_groups = Group.sorted
+    @all_roles = Role.givable
   end
 
   def update
     if @category.update(category_params)
       @category.group_ids = Array(params[:group_ids]).reject(&:blank?).map(&:to_i)
+      @category.role_ids = Array(params[:role_ids]).reject(&:blank?).map(&:to_i)
       flash[:notice] = l(:notice_successful_update)
       redirect_to kb_categories_path
     else
       @all_groups = Group.sorted
+      @all_roles = Role.givable
       render :edit
     end
   end

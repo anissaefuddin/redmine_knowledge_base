@@ -17,11 +17,15 @@
         <h1><%= @category.name %></h1>
         <div class="kb-list-count"><%= l(:label_kb_article_count, count: @article_pages.item_count) %></div>
       </div>
-      <% if User.current.admin? %>
+      <% if kb_manage_articles? || kb_manage_categories? %>
         <div class="kb-list-actions">
-          <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: @category.id), class: 'btn btn-primary icon icon-add' %>
-          <%= link_to sprite_icon('add', l(:label_kb_new_subcategory)), new_kb_category_path(parent_id: @category.id), class: 'icon icon-add' %>
-          <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(@category), class: 'icon icon-edit' %>
+          <% if kb_manage_articles? %>
+            <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: @category.id), class: 'btn btn-primary icon icon-add' %>
+          <% end %>
+          <% if kb_manage_categories? %>
+            <%= link_to sprite_icon('add', l(:label_kb_new_subcategory)), new_kb_category_path(parent_id: @category.id), class: 'icon icon-add' %>
+            <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(@category), class: 'icon icon-edit' %>
+          <% end %>
         </div>
       <% end %>
     </div>

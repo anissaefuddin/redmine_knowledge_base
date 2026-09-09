@@ -3,8 +3,7 @@
     <span class="kb-admin-tree-name">
       <%= link_to node.name, kb_category_path(node) %>
       <% if node.restricted? %>
-        <%= sprite_icon('lock', icon_only: true, class: 'kb-tree-lock',
-                         title: "#{l(:label_kb_restricted_to_groups)}: #{node.groups.map(&:name).join(', ')}") %>
+        <%= content_tag(:span, sprite_icon('lock', icon_only: true, css_class: 'kb-tree-lock'), title: kb_restriction_tooltip(node)) %>
       <% end %>
     </span>
     <span class="kb-admin-tree-count"><%= l(:label_kb_article_count, count: node.article_count(counts)) %></span>

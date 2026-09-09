@@ -25,3 +25,16 @@
     <% end %>
   </fieldset>
 <% end %>
+
+<% if @all_roles %>
+  <fieldset class="box">
+    <legend><%= l(:label_kb_restricted_to_roles) %></legend>
+    <p class="info"><%= l(:text_kb_role_restriction_hint) %></p>
+    <% @all_roles.each do |role| %>
+      <label class="block">
+        <%= check_box_tag 'role_ids[]', role.id, @category.role_ids.include?(role.id) %>
+        <%= role.name %>
+      </label>
+    <% end %>
+  </fieldset>
+<% end %>

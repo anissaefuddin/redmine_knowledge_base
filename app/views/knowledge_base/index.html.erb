@@ -1,8 +1,6 @@
 <div class="contextual">
-  <% if User.current.admin? %>
-    <%= link_to l(:label_kb_manage_categories), kb_categories_path %>
-    <%= link_to l(:label_kb_manage_tags), kb_tags_path %>
-  <% end %>
+  <% if kb_manage_categories? %><%= link_to l(:label_kb_manage_categories), kb_categories_path %><% end %>
+  <% if kb_manage_tags? %><%= link_to l(:label_kb_manage_tags), kb_tags_path %><% end %>
 </div>
 
 <h2><%= l(:label_knowledge_base) %></h2>
@@ -56,7 +54,7 @@
               <%= l(:label_kb_last_updated_by,
                     author: link_to_user(article.updated_by || article.author),
                     date: format_time(article.updated_at)).html_safe %>
-              <% if User.current.admin? %> &middot; <span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span><% end %>
+              <% if kb_manage_articles? %> &middot; <span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span><% end %>
             </div>
             <% if article.tags.any? %>
               <div class="kb-pinned-card-tags">
@@ -66,7 +64,7 @@
           </div>
         <% end %>
       </div>
-    <% elsif User.current.admin? %>
+    <% elsif kb_manage_articles? %>
       <p class="nodata"><%= l(:text_kb_no_pinned_articles_admin) %></p>
     <% end %>
   </main>

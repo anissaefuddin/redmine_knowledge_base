@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class KbArticlesController < ApplicationController
+  include RedmineKnowledgeBase::Authorization
+
   menu_item :knowledge_base
 
   before_action :require_login
   before_action :find_article, only: %i[show edit update destroy history version restore_version add_project remove_project add_related remove_related toggle_pin]
   before_action :authorize_view, only: %i[show history version]
-  before_action :require_admin, only: %i[new create edit update destroy restore_version add_project remove_project add_related remove_related toggle_pin]
+  before_action :require_kb_manage_articles, only: %i[new create edit update destroy restore_version add_project remove_project add_related remove_related toggle_pin]
 
   helper :knowledge_base
   helper :attachments

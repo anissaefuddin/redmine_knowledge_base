@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 class KbTagsController < ApplicationController
+  include RedmineKnowledgeBase::Authorization
+
   menu_item :knowledge_base
 
   before_action :require_login
-  before_action :require_admin
+  before_action :require_kb_manage_tags
   before_action :find_tag, only: %i[edit update destroy]
 
   def index

@@ -464,6 +464,72 @@
     });
   };
 
+  // Lazily builds one TurndownService (HTML -> Markdown), with the GFM
+  // plugin (tables/strikethrough/task lists) mixed in when available, so
+  // pasting from Word/Google Docs/a web page keeps its structure instead
+  // of landing as one flat blob of text.
+  KbBlockEditor.prototype.htmlToMarkdown = function (html) {
+    if (typeof TurndownService === 'undefined') return null;
+    if (!this.turndownService) {
+      this.turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        bulletListMarker: '-'
+      });
+      if (typeof turndownPluginGfm !== 'undefined') {
+        this.turndownService.use([
+          turndownPluginGfm.tables,
+          turndownPluginGfm.strikethrough,
+          turndownPluginGfm.taskListItems
+        ]);
+      }
+    }
+    try {
+      return this.turndownService.turndown(html);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Splits a pasted multi-line paste (raw Markdown text, or HTML from
+  // another document converted to Markdown above) into proper blocks via
+  // the same parser used to load existing content, instead of letting the
+  // browser collapse it into one line inside a single <input>. Native
+  // multi-line fields (code block textarea, table cells) already handle
+  // paste correctly on their own and are left alone.
+  KbBlockEditor.prototype.handleTextPaste = function (e) {
+    var target = e.target;
+    if (target.tagName === 'TEXTAREA') return;
+    if (target.closest && target.closest('.kb-block-table-wrap')) return;
+
+    var html = e.clipboardData.getData('text/html');
+    var plain = e.clipboardData.getData('text/plain');
+    var source = plain;
+
+    if (html && /<(p|div|h[1-6]|ul|ol|li|table|br|strong|em|b|i|a|blockquote|pre|code)[ >]/i.test(html)) {
+      var converted = this.htmlToMarkdown(html);
+      if (converted) source = converted;
+    }
+
+    if (!source || source.indexOf('\n') === -1) return; // single line: normal paste is fine
+
+    e.preventDefault();
+    var index = this.currentFocusIndex();
+    var currentBlock = this.blocks[index];
+    var pastedBlocks = parseMarkdown(source);
+    var NON_REPLACEABLE_EMPTY = { table: true, codeblock: true, divider: true };
+    var replaceCurrent = currentBlock && currentBlock.text === '' && !NON_REPLACEABLE_EMPTY[currentBlock.type];
+
+    var removeCount = replaceCurrent ? 1 : 0;
+    var insertAt = replaceCurrent ? index : index + 1;
+    var spliceArgs = [insertAt, removeCount].concat(pastedBlocks);
+    Array.prototype.splice.apply(this.blocks, spliceArgs);
+
+    this.sync();
+    this.render();
+    this.focusBlock(insertAt + pastedBlocks.length - 1);
+  };
+
   KbBlockEditor.prototype.bindDropZone = function () {
     var self = this;
 
@@ -477,6 +543,7 @@
           return;
         }
       }
+      self.handleTextPaste(e);
     });
 
     this.container.addEventListener('dragover', function (e) { e.preventDefault(); });

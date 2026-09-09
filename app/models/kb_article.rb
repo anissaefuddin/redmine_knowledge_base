@@ -55,7 +55,7 @@ class KbArticle < ApplicationRecord
   end
 
   def editable_by?(user = User.current)
-    user.admin?
+    user.allowed_to?(:manage_kb_articles, nil, global: true)
   end
 
   def attachments_visible?(user = User.current)

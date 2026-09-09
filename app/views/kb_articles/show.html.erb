@@ -1,5 +1,5 @@
 <div class="contextual">
-  <% if User.current.admin? %>
+  <% if kb_manage_articles? %>
     <%= button_to (@article.pinned? ? l(:button_kb_unpin) : l(:button_kb_pin)), toggle_pin_kb_article_path(@article),
                   method: :post, form_class: 'kb-inline-button' %>
     <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_article_path(@article), class: 'icon icon-edit', accesskey: accesskey(:edit) %>
@@ -7,7 +7,7 @@
 
   <%= actions_dropdown do %>
     <%= link_to sprite_icon('history', l(:label_kb_history)), history_kb_article_path(@article), class: 'icon icon-history' %>
-    <% if User.current.admin? %>
+    <% if kb_manage_articles? %>
       <%= delete_link kb_article_path(@article) %>
     <% end %>
   <% end %>
@@ -33,7 +33,7 @@
       <% if @article.pinned? %>
         <span class="tag kb-status-pinned"><%= l(:label_kb_pinned) %></span>
       <% end %>
-      <% if User.current.admin? %>
+      <% if kb_manage_articles? %>
         <span class="tag <%= kb_status_css_class(@article) %>"><%= kb_status_label(@article) %></span>
       <% end %>
       <% @article.tags.each do |tag| %><span class="tag tag-accent"><%= tag.name %></span><% end %>
@@ -62,7 +62,7 @@
           <% @related_articles.each do |related| %>
             <li>
               <%= link_to related.title, kb_article_path(related) %>
-              <% if User.current.admin? %>
+              <% if kb_manage_articles? %>
                 <%= delete_link remove_related_kb_article_path(@article, related_id: related.id), {}, l(:button_kb_remove) %>
               <% end %>
             </li>
@@ -81,7 +81,7 @@
         <p class="nodata"><%= l(:label_no_data) %></p>
       <% end %>
 
-      <% if User.current.admin? %>
+      <% if kb_manage_articles? %>
         <%= form_tag(add_related_kb_article_path(@article), method: :post, class: 'kb-add-related-form') do %>
           <%= select_tag :related_id,
                           options_from_collection_for_select(KbArticle.where.not(id: [@article.id] + @related_articles.map(&:id)).order(:title), :id, :title) %>
@@ -99,7 +99,7 @@
               <tr>
                 <td><%= link_to project.name, project_path(project) %></td>
                 <td class="buttons">
-                  <% if User.current.admin? %>
+                  <% if kb_manage_articles? %>
                     <%= delete_link remove_project_kb_article_path(@article, project_id: project.id), {}, l(:button_kb_remove) %>
                   <% end %>
                 </td>
@@ -111,7 +111,7 @@
         <p class="nodata"><%= l(:label_no_data) %></p>
       <% end %>
 
-      <% if User.current.admin? %>
+      <% if kb_manage_articles? %>
         <%= form_tag(add_project_kb_article_path(@article), method: :post, class: 'kb-add-project-form') do %>
           <%= select_tag :project_id,
                           options_from_collection_for_select(Project.active.sorted.to_a - @linked_projects, :id, :name) %>

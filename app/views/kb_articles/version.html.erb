@@ -7,7 +7,7 @@
 </div>
 
 <div class="contextual">
-  <% if User.current.admin? %>
+  <% if kb_manage_articles? %>
     <%= button_to l(:button_kb_restore), restore_version_kb_article_path(@article, version: @version.version),
                   method: :post, form_class: 'kb-inline-button',
                   data: { confirm: l(:text_kb_confirm_restore) } %>

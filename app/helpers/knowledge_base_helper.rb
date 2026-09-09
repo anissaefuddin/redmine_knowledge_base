@@ -26,4 +26,14 @@ module KnowledgeBaseHelper
   def kb_status_css_class(article)
     article.published? ? 'kb-status-published' : 'kb-status-draft'
   end
+
+  # "Restricted to groups: X, Y — Roles: A, B", assembled from only
+  # whichever of the two restriction axes the category actually has
+  # configured (see KbCategory#visible?).
+  def kb_restriction_tooltip(category)
+    parts = []
+    parts << "#{l(:label_kb_restricted_to_groups)}: #{category.groups.map(&:name).join(', ')}" if category.groups.any?
+    parts << "#{l(:label_kb_restricted_to_roles)}: #{category.roles.map(&:name).join(', ')}" if category.roles.any?
+    parts.join(' — ')
+  end
 end

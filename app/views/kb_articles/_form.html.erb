@@ -31,7 +31,7 @@
         </label>
       <% end %>
       <%= hidden_field_tag 'kb_article[tag_ids][]', '' %>
-      <% if KbTag.count.zero? && User.current.admin? %>
+      <% if KbTag.count.zero? && kb_manage_tags? %>
         <span class="text-muted"><%= link_to l(:label_kb_new_tag), new_kb_tag_path, target: '_blank', rel: 'noopener' %></span>
       <% end %>
     </div>

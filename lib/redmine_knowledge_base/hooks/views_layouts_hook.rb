@@ -9,10 +9,12 @@ module RedmineKnowledgeBase
         controller = context[:controller]
 
         if controller.is_a?(KbArticlesController) && %w[new create edit update].include?(controller.action_name)
-          # mermaid.min.js must load before kb_block_editor.js: the editor's
-          # mermaid live-preview checks `typeof mermaid` synchronously while
-          # building the code block row.
+          # Load order matters: kb_block_editor.js checks `typeof mermaid` /
+          # `typeof TurndownService` synchronously while building rows and
+          # handling paste, so both must already be defined by then.
           output += javascript_include_tag('mermaid.min', plugin: 'redmine_knowledge_base')
+          output += javascript_include_tag('turndown', plugin: 'redmine_knowledge_base')
+          output += javascript_include_tag('turndown-plugin-gfm', plugin: 'redmine_knowledge_base')
           output += javascript_include_tag(:kb_block_editor, plugin: 'redmine_knowledge_base')
         end
 
