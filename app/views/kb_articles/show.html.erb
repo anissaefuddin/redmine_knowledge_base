@@ -1,5 +1,7 @@
 <div class="contextual">
   <% if User.current.admin? %>
+    <%= button_to (@article.pinned? ? l(:button_kb_unpin) : l(:button_kb_pin)), toggle_pin_kb_article_path(@article),
+                  method: :post, form_class: 'kb-inline-button' %>
     <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_article_path(@article), class: 'icon icon-edit', accesskey: accesskey(:edit) %>
   <% end %>
 
@@ -11,49 +13,122 @@
   <% end %>
 </div>
 
-<h2><%= @article.title %></h2>
-<p class="author">
-  <%= l(:label_kb_last_updated_by,
-        author: link_to_user(@article.updated_by || @article.author),
-        date: format_time(@article.updated_at)).html_safe %>
-  &mdash; <%= l(:label_kb_version, number: @article.version) %>
-</p>
+<div class="kb-layout">
+  <aside class="kb-sidebar">
+    <div class="kb-sidebar-title"><%= l(:label_kb_category_plural) %></div>
+    <div class="kb-tree">
+      <%= render partial: 'kb_categories/tree', locals: { nodes: @category_tree, counts: @counts_by_category_id, active_id: @article.kb_category_id, depth: 0, active_article_id: @article.id } %>
+    </div>
+  </aside>
 
-<div class="wiki">
-  <%= textilizable @article.content %>
-</div>
+  <main class="kb-main">
+    <div class="kb-breadcrumb">
+      <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+      <% @breadcrumb.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
+    </div>
 
-<h3><%= l(:label_attachment_plural) %></h3>
-<%= link_to_attachments @article, thumbnails: true %>
+    <h1><%= @article.title %></h1>
 
-<fieldset class="box kb-linked-projects">
-  <legend><%= l(:label_kb_implemented_in_projects) %></legend>
-  <% if @linked_projects.any? %>
-    <table class="list">
-      <tbody>
-        <% @linked_projects.each do |project| %>
-          <tr>
-            <td><%= link_to project.name, project_path(project) %></td>
-            <td class="buttons">
+    <div class="kb-article-badges">
+      <% if @article.pinned? %>
+        <span class="tag kb-status-pinned"><%= l(:label_kb_pinned) %></span>
+      <% end %>
+      <% if User.current.admin? %>
+        <span class="tag <%= kb_status_css_class(@article) %>"><%= kb_status_label(@article) %></span>
+      <% end %>
+      <% @article.tags.each do |tag| %><span class="tag tag-accent"><%= tag.name %></span><% end %>
+    </div>
+
+    <p class="author kb-article-meta">
+      <%= l(:label_kb_last_updated_by,
+            author: link_to_user(@article.updated_by || @article.author),
+            date: format_time(@article.updated_at)).html_safe %>
+      &mdash; <%= l(:label_kb_version, number: @article.version) %>
+      &mdash; <%= l(:label_kb_view_count, count: @article.views_count) %>
+    </p>
+
+    <div class="wiki">
+      <%= textilizable @article, :content %>
+    </div>
+
+    <h3><%= l(:label_attachment_plural) %></h3>
+    <%= link_to_attachments @article, thumbnails: true %>
+
+    <fieldset class="box kb-related-articles">
+      <legend><%= l(:label_kb_related_articles) %></legend>
+      <% if @related_articles.any? %>
+        <div class="kb-related-sublabel"><%= l(:label_kb_references_to) %></div>
+        <ul>
+          <% @related_articles.each do |related| %>
+            <li>
+              <%= link_to related.title, kb_article_path(related) %>
               <% if User.current.admin? %>
-                <%= delete_link remove_project_kb_article_path(@article, project_id: project.id), {}, l(:button_kb_remove) %>
+                <%= delete_link remove_related_kb_article_path(@article, related_id: related.id), {}, l(:button_kb_remove) %>
               <% end %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-  <% else %>
-    <p class="nodata"><%= l(:label_no_data) %></p>
-  <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+      <% if @referenced_by.any? %>
+        <div class="kb-related-sublabel"><%= l(:label_kb_referenced_by_plural) %></div>
+        <ul>
+          <% @referenced_by.each do |referencer| %>
+            <li class="text-muted"><%= link_to referencer.title, kb_article_path(referencer) %></li>
+          <% end %>
+        </ul>
+      <% end %>
+      <% if @related_articles.empty? && @referenced_by.empty? %>
+        <p class="nodata"><%= l(:label_no_data) %></p>
+      <% end %>
 
-  <% if User.current.admin? %>
-    <%= form_tag(add_project_kb_article_path(@article), method: :post, class: 'kb-add-project-form') do %>
-      <%= select_tag :project_id,
-                      options_from_collection_for_select(Project.active.sorted.to_a - @linked_projects, :id, :name) %>
-      <%= submit_tag l(:button_kb_add), class: 'button-small' %>
-    <% end %>
+      <% if User.current.admin? %>
+        <%= form_tag(add_related_kb_article_path(@article), method: :post, class: 'kb-add-related-form') do %>
+          <%= select_tag :related_id,
+                          options_from_collection_for_select(KbArticle.where.not(id: [@article.id] + @related_articles.map(&:id)).order(:title), :id, :title) %>
+          <%= submit_tag l(:button_kb_add), class: 'button-small' %>
+        <% end %>
+      <% end %>
+    </fieldset>
+
+    <fieldset class="box kb-linked-projects">
+      <legend><%= l(:label_kb_implemented_in_projects) %></legend>
+      <% if @linked_projects.any? %>
+        <table class="list">
+          <tbody>
+            <% @linked_projects.each do |project| %>
+              <tr>
+                <td><%= link_to project.name, project_path(project) %></td>
+                <td class="buttons">
+                  <% if User.current.admin? %>
+                    <%= delete_link remove_project_kb_article_path(@article, project_id: project.id), {}, l(:button_kb_remove) %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="nodata"><%= l(:label_no_data) %></p>
+      <% end %>
+
+      <% if User.current.admin? %>
+        <%= form_tag(add_project_kb_article_path(@article), method: :post, class: 'kb-add-project-form') do %>
+          <%= select_tag :project_id,
+                          options_from_collection_for_select(Project.active.sorted.to_a - @linked_projects, :id, :name) %>
+          <%= submit_tag l(:button_kb_add), class: 'button-small' %>
+        <% end %>
+      <% end %>
+    </fieldset>
+  </main>
+
+  <% if @parsed_headings.present? %>
+    <aside class="kb-toc">
+      <div class="kb-sidebar-title"><%= l(:label_kb_toc) %></div>
+      <% @parsed_headings.each do |level, anchor, item| %>
+        <a href="#<%= anchor %>" class="kb-toc-link kb-toc-level-<%= level %>"><%= item %></a>
+      <% end %>
+    </aside>
   <% end %>
-</fieldset>
+</div>
 
 <% html_title @article.title, l(:label_knowledge_base) %>

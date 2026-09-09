@@ -1,6 +1,7 @@
 <div class="contextual">
   <% if User.current.admin? %>
-    <%= link_to sprite_icon('add', l(:label_kb_new_category)), new_kb_category_path, class: 'icon icon-add' %>
+    <%= link_to l(:label_kb_manage_categories), kb_categories_path %>
+    <%= link_to l(:label_kb_manage_tags), kb_tags_path %>
   <% end %>
 </div>
 
@@ -19,6 +20,7 @@
         <% @articles.each do |article| %>
           <tr>
             <td><%= link_to article.title, kb_article_path(article) %></td>
+            <td><span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span></td>
             <td><%= article.kb_category.name %></td>
           </tr>
         <% end %>
@@ -30,41 +32,44 @@
   <hr>
 <% end %>
 
-<% if @categories.blank? %>
-  <p class="nodata"><%= l(:text_kb_no_categories) %></p>
-<% else %>
-  <% @categories.each do |category| %>
-    <fieldset class="box kb-category">
-      <legend>
-        <%= category.name %>
-        <% if category.restricted? %>
-          <%= content_tag(:span, sprite_icon('lock', icon_only: true),
-                           title: "#{l(:label_kb_restricted_to_groups)}: #{category.groups.map(&:name).join(', ')}") %>
+<div class="kb-layout">
+  <aside class="kb-sidebar">
+    <div class="kb-sidebar-title"><%= l(:label_kb_category_plural) %></div>
+    <% if @root_categories.blank? %>
+      <p class="nodata"><%= l(:text_kb_no_categories) %></p>
+    <% else %>
+      <div class="kb-tree">
+        <%= render partial: 'kb_categories/tree', locals: { nodes: @root_categories, counts: @counts_by_category_id, active_id: nil, depth: 0 } %>
+      </div>
+    <% end %>
+  </aside>
+
+  <main class="kb-main">
+    <% if @pinned_articles.any? %>
+      <div class="kb-sidebar-title"><%= l(:label_kb_pinned_articles) %></div>
+      <div class="kb-pinned-grid">
+        <% @pinned_articles.each do |article| %>
+          <div class="kb-pinned-card">
+            <div class="kb-pinned-card-category"><%= article.kb_category.name %></div>
+            <h3><%= link_to article.title, kb_article_path(article) %></h3>
+            <div class="kb-pinned-card-meta">
+              <%= l(:label_kb_last_updated_by,
+                    author: link_to_user(article.updated_by || article.author),
+                    date: format_time(article.updated_at)).html_safe %>
+              <% if User.current.admin? %> &middot; <span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span><% end %>
+            </div>
+            <% if article.tags.any? %>
+              <div class="kb-pinned-card-tags">
+                <% article.tags.each do |t| %><span class="tag tag-outline"><%= t.name %></span><% end %>
+              </div>
+            <% end %>
+          </div>
         <% end %>
-      </legend>
-      <% if category.description.present? %>
-        <p class="kb-category-description"><%= category.description %></p>
-      <% end %>
-
-      <% articles = category.kb_articles.select { |a| a.visible?(User.current) } %>
-      <% if articles.any? %>
-        <ul>
-          <% articles.each do |article| %>
-            <li><%= link_to article.title, kb_article_path(article) %></li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="nodata"><%= l(:text_kb_no_articles_in_category) %></p>
-      <% end %>
-
-      <% if User.current.admin? %>
-        <p class="kb-category-actions">
-          <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: category.id), class: 'icon icon-add' %>
-          <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(category), class: 'icon icon-edit' %>
-        </p>
-      <% end %>
-    </fieldset>
-  <% end %>
-<% end %>
+      </div>
+    <% elsif User.current.admin? %>
+      <p class="nodata"><%= l(:text_kb_no_pinned_articles_admin) %></p>
+    <% end %>
+  </main>
+</div>
 
 <% html_title l(:label_knowledge_base) %>

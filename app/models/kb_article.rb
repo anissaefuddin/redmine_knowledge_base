@@ -9,6 +9,23 @@ class KbArticle < ApplicationRecord
   has_many :kb_article_projects, dependent: :destroy
   has_many :projects, through: :kb_article_projects
 
+  has_many :kb_article_tags, dependent: :destroy
+  has_many :tags, through: :kb_article_tags, source: :kb_tag
+
+  # "See also" links this article points at. The reverse direction (who
+  # else points at this article) is looked up on demand via #referenced_by
+  # for display, but still needs its own dependent: :destroy below -
+  # otherwise deleting an article that other articles reference would hit
+  # the related_kb_article_id foreign key instead of cleaning up.
+  has_many :kb_article_relations, dependent: :destroy
+  has_many :related_articles, through: :kb_article_relations, source: :related_kb_article
+  has_many :inverse_kb_article_relations, class_name: 'KbArticleRelation',
+                                           foreign_key: :related_kb_article_id, dependent: :destroy
+
+  enum status: { draft: 'draft', published: 'published' }
+
+  scope :pinned, -> { where.not(pinned_at: nil).order(pinned_at: :desc) }
+
   # acts_as_attachable's default attachments_visible?/editable?/deletable? call
   # user.allowed_to?(permission, self.project) - that check only works for
   # project-scoped containers. KbArticle is deliberately global (no #project),
@@ -23,7 +40,18 @@ class KbArticle < ApplicationRecord
   before_update :snapshot_version, if: -> { title_changed? || content_changed? }
 
   def visible?(user = User.current)
+    return true if user.admin?
+    return false unless published?
+
     kb_category.visible?(user)
+  end
+
+  def referenced_by
+    KbArticle.joins(:kb_article_relations).where(kb_article_relations: { related_kb_article_id: id })
+  end
+
+  def pinned?
+    pinned_at.present?
   end
 
   def editable_by?(user = User.current)

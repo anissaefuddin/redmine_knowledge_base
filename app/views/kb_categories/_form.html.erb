@@ -3,7 +3,14 @@
 <div class="box tabular">
   <p><%= f.text_field :name, required: true, size: 60 %></p>
   <p><%= f.text_area :description, rows: 3, cols: 60 %></p>
-  <p><%= f.text_field :position, size: 5 %></p>
+  <p>
+    <%= f.select :parent_id,
+                  options_for_select([[l(:label_kb_no_parent), nil]] + kb_category_tree_options(exclude: @category.persisted? ? @category : nil), f.object.parent_id) %>
+  </p>
+  <p>
+    <%= f.text_field :position, size: 5 %>
+    <em class="info"><%= l(:text_kb_position_hint) %></em>
+  </p>
 </div>
 
 <% if @all_groups %>

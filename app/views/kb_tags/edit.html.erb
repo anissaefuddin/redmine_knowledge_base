@@ -1,0 +1,12 @@
+<div class="contextual">
+  <%= delete_link kb_tag_path(@tag) %>
+</div>
+
+<h2><%= l(:label_kb_edit_tag) %>: <%= @tag.name %></h2>
+
+<%= labelled_form_for :kb_tag, @tag, url: kb_tag_path(@tag), html: { method: :put } do |f| %>
+  <%= render partial: 'form', locals: { f: f } %>
+  <%= submit_tag l(:button_save) %>
+<% end %>
+
+<% html_title l(:label_kb_edit_tag), @tag.name, l(:label_knowledge_base) %>

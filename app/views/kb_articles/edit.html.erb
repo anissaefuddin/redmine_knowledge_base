@@ -1,8 +1,18 @@
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+  <% @article.kb_category.self_and_ancestors.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
+  / <%= link_to @article.title, kb_article_path(@article) %>
+  / <%= l(:button_edit) %>
+</div>
+
 <h2><%= l(:label_kb_edit_article) %>: <%= @article.title %></h2>
 
-<%= labelled_form_for :kb_article, @article, url: kb_article_path(@article), html: { method: :put, multipart: true } do |f| %>
+<%= labelled_form_for :kb_article, @article, url: kb_article_path(@article), html: { method: :put, multipart: true, id: 'kb-article-form' } do |f| %>
   <%= render partial: 'form', locals: { f: f } %>
-  <%= submit_tag l(:button_save) %>
+  <div class="kb-form-actions">
+    <%= submit_tag l(:button_save) %>
+    <%= link_to l(:button_cancel), kb_article_path(@article) %>
+  </div>
 <% end %>
 
 <% html_title l(:label_kb_edit_article), @article.title, l(:label_knowledge_base) %>

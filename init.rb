@@ -7,7 +7,7 @@ Redmine::Plugin.register :redmine_knowledge_base do
   name 'Redmine Knowledge Base'
   author 'anissaefuddin'
   description 'Cross-project knowledge base: a single source of truth for documentation referenced across multiple projects.'
-  version '0.1.0'
+  version '0.2.0'
   url 'https://github.com/anissaefuddin/redmine_knowledge_base'
   author_url 'https://github.com/anissaefuddin'
 
@@ -19,7 +19,7 @@ Redmine::Plugin.register :redmine_knowledge_base do
   # built-in "Non member" role, so it can reach users regardless of which
   # projects they belong to) and checked with allowed_to?(:view_knowledge_base, nil, global: true).
   permission :view_knowledge_base,
-             { knowledge_base: [:index], kb_articles: [:show, :history, :version] },
+             { knowledge_base: [:index], kb_categories: [:show], kb_articles: [:show, :history, :version] },
              read: true
 
   menu :application_menu, :knowledge_base,

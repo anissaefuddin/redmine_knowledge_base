@@ -1,17 +1,49 @@
 <%= error_messages_for 'article' %>
 
-<div class="box tabular">
-  <p>
-    <%= f.select :kb_category_id, KbCategory.sorted.map { |c| [c.name, c.id] }, required: true %>
-  </p>
-  <p><%= f.text_field :title, required: true, size: 60 %></p>
-  <p>
-    <%= f.text_area :content, id: 'kb_article_content', rows: 20, cols: 100, class: 'wiki-edit', required: true %>
-  </p>
+<div class="kb-form-title-row">
+  <%= f.text_field :title, required: true, class: 'kb-form-title-input', placeholder: l(:label_kb_article) %>
 </div>
-<%= wikitoolbar_for 'kb_article_content' %>
+
+<div class="kb-form-meta-grid">
+  <div class="field">
+    <label><%= l(:label_kb_category) %></label>
+    <%= f.select :kb_category_id, options_for_select(kb_category_tree_options, f.object.kb_category_id), {}, required: true %>
+  </div>
+  <div class="field">
+    <label id="kb-status-label"><%= l(:field_status) %></label>
+    <div class="kb-status-toggle" role="radiogroup" aria-labelledby="kb-status-label">
+      <label class="inline">
+        <%= f.radio_button :status, 'draft' %> <%= l(:label_kb_status_draft) %>
+      </label>
+      <label class="inline">
+        <%= f.radio_button :status, 'published' %> <%= l(:label_kb_status_published) %>
+      </label>
+    </div>
+  </div>
+  <div class="field">
+    <label><%= l(:label_kb_tag_plural) %></label>
+    <div class="kb-tag-chip-picker">
+      <% KbTag.sorted.each do |tag| %>
+        <label class="kb-tag-chip-toggle">
+          <%= check_box_tag 'kb_article[tag_ids][]', tag.id, @article.tag_ids.include?(tag.id),
+                            id: "kb_article_tag_ids_#{tag.id}", class: 'kb-tag-chip-checkbox' %>
+          <span class="tag tag-outline"><%= tag.name %></span>
+        </label>
+      <% end %>
+      <%= hidden_field_tag 'kb_article[tag_ids][]', '' %>
+      <% if KbTag.count.zero? && User.current.admin? %>
+        <span class="text-muted"><%= link_to l(:label_kb_new_tag), new_kb_tag_path, target: '_blank', rel: 'noopener' %></span>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <%= f.text_area :content, id: 'kb_article_content', rows: 20, cols: 100, class: 'wiki-edit', required: true %>
+</div>
 
 <fieldset class="box">
   <legend><%= l(:label_attachment_plural) %></legend>
+  <p class="info"><%= l(:text_kb_attachments_hint) %></p>
   <%= render partial: 'attachments/form', locals: { container: @article } %>
 </fieldset>

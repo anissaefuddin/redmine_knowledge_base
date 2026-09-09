@@ -1,20 +1,31 @@
 # frozen_string_literal: true
 
 class KbArticlesController < ApplicationController
+  menu_item :knowledge_base
+
   before_action :require_login
-  before_action :find_article, only: %i[show edit update destroy history version add_project remove_project]
+  before_action :find_article, only: %i[show edit update destroy history version restore_version add_project remove_project add_related remove_related toggle_pin]
   before_action :authorize_view, only: %i[show history version]
-  before_action :require_admin, only: %i[new create edit update destroy add_project remove_project]
+  before_action :require_admin, only: %i[new create edit update destroy restore_version add_project remove_project add_related remove_related toggle_pin]
 
   helper :knowledge_base
   helper :attachments
 
   def show
     @linked_projects = @article.projects.order(:name)
+    @related_articles = @article.related_articles.select { |a| a.visible?(User.current) }
+    @referenced_by = @article.referenced_by.select { |a| a.visible?(User.current) }
+    @breadcrumb = @article.kb_category.self_and_ancestors
+    @counts_by_category_id = KbArticle.group(:kb_category_id).count
+    @category_tree = KbCategory.build_tree(KbCategory.sorted.to_a)
+    # Bypasses validations/callbacks so a view doesn't touch updated_at or
+    # trigger KbArticle#snapshot_version. authorize_view already gated
+    # visibility before this action runs.
+    @article.update_column(:views_count, @article.views_count + 1)
   end
 
   def new
-    @article = KbArticle.new(kb_category_id: params[:kb_category_id])
+    @article = KbArticle.new(kb_category_id: params[:kb_category_id], status: 'draft')
   end
 
   def create
@@ -51,10 +62,29 @@ class KbArticlesController < ApplicationController
 
   def history
     @versions = @article.kb_article_versions
+    @breadcrumb = @article.kb_category.self_and_ancestors
   end
 
   def version
     @version = @article.kb_article_versions.find_by!(version: params[:version])
+    @breadcrumb = @article.kb_category.self_and_ancestors
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
+  # Overwrites the article's current title/content with an old version's,
+  # going through the normal update path so the state being replaced is
+  # itself snapshotted by KbArticle#snapshot_version first - restoring is
+  # just another edit, never destructive of history.
+  def restore_version
+    version = @article.kb_article_versions.find_by!(version: params[:version])
+    @article.updated_by = User.current
+    if @article.update(title: version.title, content: version.content)
+      flash[:notice] = l(:notice_kb_version_restored, number: version.version)
+    else
+      flash[:error] = l(:error_kb_version_restore_failed)
+    end
+    redirect_to kb_article_path(@article)
   rescue ActiveRecord::RecordNotFound
     render_404
   end
@@ -72,6 +102,26 @@ class KbArticlesController < ApplicationController
     redirect_to kb_article_path(@article)
   end
 
+  def add_related
+    related = KbArticle.find(params[:related_id].presence)
+    @article.related_articles << related unless @article.related_articles.exists?(related.id) || related.id == @article.id
+    redirect_to kb_article_path(@article)
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
+  def remove_related
+    @article.kb_article_relations.where(related_kb_article_id: params[:related_id]).destroy_all
+    redirect_to kb_article_path(@article)
+  end
+
+  def toggle_pin
+    now_pinned = !@article.pinned?
+    @article.update_column(:pinned_at, now_pinned ? Time.current : nil)
+    flash[:notice] = now_pinned ? l(:notice_kb_pinned) : l(:notice_kb_unpinned)
+    redirect_to kb_article_path(@article)
+  end
+
   private
 
   def find_article
@@ -85,6 +135,6 @@ class KbArticlesController < ApplicationController
   end
 
   def article_params
-    params.require(:kb_article).permit(:title, :content, :kb_category_id)
+    params.require(:kb_article).permit(:title, :content, :kb_category_id, :status, tag_ids: [])
   end
 end

@@ -1,0 +1,21 @@
+<% (nodes || []).each do |node| %>
+  <div class="kb-admin-tree-row" style="padding-left: <%= depth * 20 %>px;">
+    <span class="kb-admin-tree-name">
+      <%= link_to node.name, kb_category_path(node) %>
+      <% if node.restricted? %>
+        <%= sprite_icon('lock', icon_only: true, class: 'kb-tree-lock',
+                         title: "#{l(:label_kb_restricted_to_groups)}: #{node.groups.map(&:name).join(', ')}") %>
+      <% end %>
+    </span>
+    <span class="kb-admin-tree-count"><%= l(:label_kb_article_count, count: node.article_count(counts)) %></span>
+    <span class="kb-admin-tree-actions">
+      <%= link_to sprite_icon('add', l(:label_kb_new_subcategory)), new_kb_category_path(parent_id: node.id), class: 'icon icon-add' %>
+      <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(node), class: 'icon icon-edit' %>
+      <%= delete_link kb_category_path(node) %>
+    </span>
+  </div>
+  <% if node.description.present? %>
+    <p class="kb-category-description" style="padding-left: <%= depth * 20 %>px;"><%= node.description %></p>
+  <% end %>
+  <%= render partial: 'kb_categories/admin_tree', locals: { nodes: node.loaded_children, counts: counts, depth: depth + 1 } %>
+<% end %>

@@ -1,0 +1,42 @@
+<div class="contextual">
+  <%= link_to sprite_icon('add', l(:label_kb_new_tag)), new_kb_tag_path, class: 'icon icon-add' %>
+</div>
+
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %> / <%= l(:label_kb_tag_plural) %>
+</div>
+
+<h2><%= l(:label_kb_tag_plural) %></h2>
+
+<p class="kb-admin-nav">
+  <%= link_to l(:label_kb_category_plural), kb_categories_path %> &middot;
+  <strong><%= l(:label_kb_tag_plural) %></strong>
+</p>
+
+<% if @tags.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th><%= l(:field_name) %></th>
+        <th><%= l(:label_kb_article_plural) %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @tags.each do |tag| %>
+        <tr>
+          <td><%= tag.name %></td>
+          <td><%= tag.kb_articles.count %></td>
+          <td class="buttons">
+            <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_tag_path(tag), class: 'icon icon-edit' %>
+            <%= delete_link kb_tag_path(tag) %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>
+
+<% html_title l(:label_kb_tag_plural), l(:label_knowledge_base) %>

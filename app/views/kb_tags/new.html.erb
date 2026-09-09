@@ -1,0 +1,8 @@
+<h2><%= l(:label_kb_new_tag) %></h2>
+
+<%= labelled_form_for :kb_tag, @tag, url: kb_tags_path do |f| %>
+  <%= render partial: 'form', locals: { f: f } %>
+  <%= submit_tag l(:button_create) %>
+<% end %>
+
+<% html_title l(:label_kb_new_tag), l(:label_kb_tag_plural), l(:label_knowledge_base) %>

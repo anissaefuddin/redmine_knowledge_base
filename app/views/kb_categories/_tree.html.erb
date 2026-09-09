@@ -1,0 +1,25 @@
+<% (nodes || []).select { |n| n.visible?(User.current) }.each do |node| %>
+  <% is_active = active_id && node.id == active_id %>
+  <div class="kb-tree-node<%= ' kb-tree-node-active' if is_active %>" style="padding-left: <%= 8 + depth * 16 %>px;">
+    <%= link_to kb_category_path(node), class: 'kb-tree-link' do %>
+      <span class="kb-tree-name"><%= node.name %></span>
+      <% if node.restricted? %>
+        <%= sprite_icon('lock', icon_only: true, class: 'kb-tree-lock',
+                         title: "#{l(:label_kb_restricted_to_groups)}: #{node.groups.map(&:name).join(', ')}") %>
+      <% end %>
+      <span class="kb-tree-count"><%= node.article_count(counts) %></span>
+    <% end %>
+  </div>
+  <% if is_active %>
+    <% node_articles = node.kb_articles.select { |a| a.visible?(User.current) } %>
+    <% if node_articles.any? %>
+      <div class="kb-tree-articles" style="padding-left: <%= 8 + (depth + 1) * 16 %>px;">
+        <% node_articles.each do |article| %>
+          <%= link_to article.title, kb_article_path(article),
+                      class: "kb-tree-article-link#{' kb-tree-article-active' if defined?(active_article_id) && article.id == active_article_id}" %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+  <%= render partial: 'kb_categories/tree', locals: { nodes: node.loaded_children, counts: counts, active_id: active_id, depth: depth + 1, active_article_id: (defined?(active_article_id) ? active_article_id : nil) } %>
+<% end %>

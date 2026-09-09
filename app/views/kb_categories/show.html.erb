@@ -1,0 +1,92 @@
+<div class="kb-layout">
+  <aside class="kb-sidebar">
+    <div class="kb-sidebar-title"><%= l(:label_kb_category_plural) %></div>
+    <div class="kb-tree">
+      <%= render partial: 'kb_categories/tree', locals: { nodes: @category_tree, counts: @counts_by_category_id, active_id: @category.id, depth: 0 } %>
+    </div>
+  </aside>
+
+  <main class="kb-main">
+    <div class="kb-breadcrumb">
+      <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+      <% @ancestors.each do |a| %> / <%= link_to a.name, kb_category_path(a) %><% end %>
+    </div>
+
+    <div class="kb-list-header">
+      <div>
+        <h1><%= @category.name %></h1>
+        <div class="kb-list-count"><%= l(:label_kb_article_count, count: @article_pages.item_count) %></div>
+      </div>
+      <% if User.current.admin? %>
+        <div class="kb-list-actions">
+          <%= link_to sprite_icon('add', l(:label_kb_new_article)), new_kb_article_path(kb_category_id: @category.id), class: 'btn btn-primary icon icon-add' %>
+          <%= link_to sprite_icon('add', l(:label_kb_new_subcategory)), new_kb_category_path(parent_id: @category.id), class: 'icon icon-add' %>
+          <%= link_to sprite_icon('edit', l(:button_edit)), edit_kb_category_path(@category), class: 'icon icon-edit' %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @category.description.present? %>
+      <p class="kb-category-description"><%= @category.description %></p>
+    <% end %>
+
+    <%= form_tag(kb_category_path(@category), method: :get, class: 'kb-search-form') do %>
+      <%= text_field_tag :q, @q, placeholder: l(:label_kb_search_placeholder) %>
+      <% @tag_ids.each do |tid| %><%= hidden_field_tag 'tag_ids[]', tid %><% end %>
+      <%= submit_tag l(:button_apply), name: nil %>
+    <% end %>
+
+    <% if @tags.any? %>
+      <div class="kb-tag-chips">
+        <% @tags.each do |tag| %>
+          <% active = @tag_ids.include?(tag.id) %>
+          <% new_ids = active ? (@tag_ids - [tag.id]) : (@tag_ids + [tag.id]) %>
+          <%= link_to tag.name, kb_category_path(@category, q: @q, tag_ids: new_ids), class: "tag #{active ? 'tag-accent' : 'tag-outline'}" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% show_category_column = @articles.any? { |a| a.kb_category_id != @category.id } %>
+
+    <% if @articles.any? %>
+      <table class="list kb-article-table">
+        <thead>
+          <tr>
+            <%= sort_header_tag('title', caption: l(:field_subject)) %>
+            <th><%= l(:field_status) %></th>
+            <% if show_category_column %><th><%= l(:label_kb_category) %></th><% end %>
+            <th><%= l(:label_kb_tag_plural) %></th>
+            <%= sort_header_tag('updated_on', caption: l(:field_updated_on)) %>
+            <th><%= l(:field_author) %></th>
+            <%= sort_header_tag('views', caption: l(:label_kb_views), default_order: 'desc') %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @articles.each do |article| %>
+            <tr>
+              <td><%= link_to article.title, kb_article_path(article) %></td>
+              <td><span class="tag <%= kb_status_css_class(article) %>"><%= kb_status_label(article) %></span></td>
+              <% if show_category_column %>
+                <td class="text-muted"><%= article.kb_category.name if article.kb_category_id != @category.id %></td>
+              <% end %>
+              <td class="kb-article-tags">
+                <% article.tags.each do |t| %><span class="tag tag-outline"><%= t.name %></span><% end %>
+              </td>
+              <td class="text-muted"><%= format_time(article.updated_at) %></td>
+              <td class="text-muted"><%= link_to_user(article.updated_by || article.author) %></td>
+              <td class="text-right"><%= article.views_count %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="nodata">
+        <%= @category_total_count.zero? ? l(:text_kb_no_articles_in_category) : l(:text_kb_no_articles_matching) %>
+      </p>
+    <% end %>
+
+    <p class="pagination"><%= pagination_links_full @article_pages %></p>
+  </main>
+</div>
+
+<% html_title @category.name, l(:label_knowledge_base) %>

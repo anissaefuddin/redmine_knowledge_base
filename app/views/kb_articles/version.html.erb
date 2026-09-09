@@ -1,8 +1,24 @@
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+  <% @breadcrumb.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
+  / <%= link_to @article.title, kb_article_path(@article) %>
+  / <%= link_to l(:label_kb_history), history_kb_article_path(@article) %>
+  / <%= l(:label_kb_version, number: @version.version) %>
+</div>
+
+<div class="contextual">
+  <% if User.current.admin? %>
+    <%= button_to l(:button_kb_restore), restore_version_kb_article_path(@article, version: @version.version),
+                  method: :post, form_class: 'kb-inline-button',
+                  data: { confirm: l(:text_kb_confirm_restore) } %>
+  <% end %>
+</div>
+
 <h2><%= @version.title %> <span class="version-note">(<%= l(:label_kb_version, number: @version.version) %>)</span></h2>
 <p class="author"><%= l(:label_kb_last_updated_by, author: link_to_user(@version.author), date: format_time(@version.created_at)).html_safe %></p>
 
 <div class="wiki">
-  <%= textilizable @version.content %>
+  <%= textilizable @version.content, object: @article %>
 </div>
 
 <p>

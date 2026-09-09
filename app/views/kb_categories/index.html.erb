@@ -1,0 +1,24 @@
+<div class="contextual">
+  <%= link_to sprite_icon('add', l(:label_kb_new_category)), new_kb_category_path, class: 'icon icon-add' %>
+</div>
+
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %> / <%= l(:label_kb_category_plural) %>
+</div>
+
+<h2><%= l(:label_kb_category_plural) %></h2>
+
+<p class="kb-admin-nav">
+  <strong><%= l(:label_kb_category_plural) %></strong> &middot;
+  <%= link_to l(:label_kb_tag_plural), kb_tags_path %>
+</p>
+
+<% if @category_tree.blank? %>
+  <p class="nodata"><%= l(:text_kb_no_categories) %></p>
+<% else %>
+  <div class="kb-admin-tree">
+    <%= render partial: 'kb_categories/admin_tree', locals: { nodes: @category_tree, counts: @counts_by_category_id, depth: 0 } %>
+  </div>
+<% end %>
+
+<% html_title l(:label_kb_category_plural), l(:label_knowledge_base) %>

@@ -1,8 +1,18 @@
+<% category = @article.kb_category %>
+<div class="kb-breadcrumb">
+  <%= link_to l(:label_knowledge_base), knowledge_base_path %>
+  <% category&.self_and_ancestors&.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
+  / <%= l(:label_kb_new_article) %>
+</div>
+
 <h2><%= l(:label_kb_new_article) %></h2>
 
-<%= labelled_form_for :kb_article, @article, url: kb_articles_path, html: { multipart: true } do |f| %>
+<%= labelled_form_for :kb_article, @article, url: kb_articles_path, html: { multipart: true, id: 'kb-article-form' } do |f| %>
   <%= render partial: 'form', locals: { f: f } %>
-  <%= submit_tag l(:button_create) %>
+  <div class="kb-form-actions">
+    <%= submit_tag l(:button_create) %>
+    <%= link_to l(:button_cancel), category ? kb_category_path(category) : knowledge_base_path %>
+  </div>
 <% end %>
 
 <% html_title l(:label_kb_new_article), l(:label_knowledge_base) %>
