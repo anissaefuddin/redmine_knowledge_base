@@ -9,7 +9,8 @@ class KbTagsController < ApplicationController
   menu_item :knowledge_base
 
   before_action :require_login
-  before_action :require_kb_manage_tags
+  before_action :require_kb_manage_tags, except: :quick_create
+  before_action :require_kb_can_upload, only: :quick_create
   before_action :find_tag, only: %i[edit update destroy]
 
   def index
@@ -50,6 +51,20 @@ class KbTagsController < ApplicationController
       redirect_to kb_tags_path
     else
       render :new
+    end
+  end
+
+  # Lets anyone who can already edit article content create a new tag
+  # inline from the article form, without needing manage_kb_tags (full tag
+  # administration - rename/reorder/delete - stays Admin-only via the
+  # actions above). Always renders JSON directly, never via respond_to, so
+  # it never needs params[:format] set - same reasoning as KbUploadsController.
+  def quick_create
+    tag = KbTag.new(name: params[:name].to_s.strip)
+    if tag.save
+      render json: { id: tag.id, name: tag.name }, status: :created
+    else
+      render json: { errors: tag.errors.full_messages }, status: :unprocessable_entity
     end
   end
 

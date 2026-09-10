@@ -60,6 +60,23 @@ class KbArticlesControllerP3Test < ActionController::TestCase
     kb_login_as(@viewer)
     compatible_request :get, :diff, id: @article.id, version: 1
     assert_response :success
-    assert_equal 1, assigns(:version).version
+    assert_equal 1, assigns(:from_version).version
+  end
+
+  def test_diff_compares_two_arbitrary_past_versions_not_just_vs_current
+    @article.update!(updated_by: @editor, content: 'v3 content')
+    kb_login_as(@viewer)
+    compatible_request :get, :diff, id: @article.id, version: 1, compare_to: 2
+    assert_response :success
+    assert_equal 1, assigns(:from_version).version
+    assert_equal 'v2 content', assigns(:to_content)
+  end
+
+  def test_restoring_the_version_right_before_current_is_the_rollback_path
+    kb_login_as(@editor)
+    previous = @article.kb_article_versions.first
+    assert_equal 1, previous.version
+    compatible_request :post, :restore_version, id: @article.id, version: previous.version
+    assert_equal 'v1 content', @article.reload.content
   end
 end

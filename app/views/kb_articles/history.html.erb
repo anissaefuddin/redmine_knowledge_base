@@ -7,6 +7,17 @@
 
 <h2><%= l(:label_kb_history) %>: <%= @article.title %></h2>
 
+<% if @versions.any? %>
+  <% version_options = @versions.map { |v| [l(:label_kb_version, number: v.version), v.version] } %>
+  <%= form_tag diff_version_kb_article_path(@article), method: :get, class: 'kb-compare-form' do %>
+    <span class="kb-filter-label"><%= l(:label_kb_compare) %>:</span>
+    <%= select_tag :version, options_for_select(version_options, params[:version]) %>
+    <span>&#8594;</span>
+    <%= select_tag :compare_to, options_for_select([[l(:label_kb_current_version), '']] + version_options, params[:compare_to]) %>
+    <%= submit_tag l(:label_kb_compare), class: 'button-small' %>
+  <% end %>
+<% end %>
+
 <table class="list">
   <thead>
     <tr>

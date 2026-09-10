@@ -23,21 +23,71 @@
   </div>
   <div class="field">
     <label><%= l(:label_kb_tag_plural) %></label>
-    <div class="kb-tag-chip-picker">
+    <div class="kb-tag-chip-picker" id="kb-tag-chip-picker">
       <% KbTag.sorted.each do |tag| %>
-        <label class="kb-tag-chip-toggle">
+        <label class="kb-tag-chip-toggle" data-tag-id="<%= tag.id %>">
           <%= check_box_tag 'kb_article[tag_ids][]', tag.id, @article.tag_ids.include?(tag.id),
                             id: "kb_article_tag_ids_#{tag.id}", class: 'kb-tag-chip-checkbox' %>
           <span class="tag tag-outline"><%= tag.name %></span>
         </label>
       <% end %>
       <%= hidden_field_tag 'kb_article[tag_ids][]', '' %>
-      <% if KbTag.count.zero? && kb_manage_tags? %>
-        <span class="text-muted"><%= link_to l(:label_kb_new_tag), new_kb_tag_path, target: '_blank', rel: 'noopener' %></span>
+      <% if kb_add_articles? || kb_edit_article?(@article) %>
+        <span class="kb-tag-quick-create">
+          <%= text_field_tag :kb_new_tag_name, nil, id: 'kb-new-tag-name', placeholder: l(:label_kb_new_tag), size: 12 %>
+          <button type="button" id="kb-new-tag-btn" class="button-small"><%= l(:button_kb_add) %></button>
+        </span>
       <% end %>
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var input = document.getElementById('kb-new-tag-name');
+    var btn = document.getElementById('kb-new-tag-btn');
+    var picker = document.getElementById('kb-tag-chip-picker');
+    if (!btn || !picker) return;
+
+    function createTag() {
+      var name = input.value.trim();
+      if (!name) return;
+      btn.disabled = true;
+      fetch(<%= quick_create_kb_tag_path.to_json.html_safe %>, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        },
+        body: 'name=' + encodeURIComponent(name)
+      }).then(function (res) { return res.json().then(function (json) { return { ok: res.ok, json: json }; }); })
+        .then(function (result) {
+          btn.disabled = false;
+          if (!result.ok) {
+            alert((result.json.errors || ['<%= j l(:error_kb_tag_create_failed) %>']).join(', '));
+            return;
+          }
+          var label = document.createElement('label');
+          label.className = 'kb-tag-chip-toggle';
+          label.setAttribute('data-tag-id', result.json.id);
+          label.innerHTML = '<input type="checkbox" name="kb_article[tag_ids][]" value="' + result.json.id +
+            '" id="kb_article_tag_ids_' + result.json.id + '" class="kb-tag-chip-checkbox" checked>' +
+            '<span class="tag tag-outline"></span>';
+          label.querySelector('span').textContent = result.json.name;
+          picker.insertBefore(label, document.getElementById('kb-new-tag-name').closest('.kb-tag-quick-create'));
+          input.value = '';
+          input.focus();
+        });
+    }
+
+    btn.addEventListener('click', createTag);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); createTag(); }
+    });
+  })();
+</script>
 
 <div class="box">
   <%

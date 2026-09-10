@@ -99,11 +99,26 @@ class KbArticlesController < ApplicationController
     render_404
   end
 
-  # Word-level diff between an old version's content and the article's
-  # current live content, so a reader can see what's changed since that
-  # version without having to eyeball two full-text pages side by side.
+  # Word-level diff between two points in the article's history: :version
+  # is always required (the baseline); :compare_to is another version
+  # number to diff against, or - if left out - the article's current live
+  # content. Free version-to-version compare, not just old-vs-current.
   def diff
-    @version = @article.kb_article_versions.find_by!(version: params[:version])
+    @from_version = @article.kb_article_versions.find_by!(version: params[:version])
+
+    if params[:compare_to].present?
+      @to_version = @article.kb_article_versions.find_by!(version: params[:compare_to])
+      @to_content = @to_version.content
+      @to_label = l(:label_kb_version, number: @to_version.version)
+      @to_author = @to_version.author
+      @to_date = @to_version.created_at
+    else
+      @to_content = @article.content
+      @to_label = "#{l(:label_kb_version, number: @article.version)} (#{l(:label_kb_current_version)})"
+      @to_author = @article.updated_by || @article.author
+      @to_date = @article.updated_at
+    end
+
     @breadcrumb = @article.kb_category.self_and_ancestors
   rescue ActiveRecord::RecordNotFound
     render_404

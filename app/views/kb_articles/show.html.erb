@@ -9,6 +9,12 @@
     <% end %>
     <%= link_to sprite_icon('history', l(:label_kb_history)), history_kb_article_path(@article), class: 'icon icon-history' %>
     <% if kb_manage_articles? %>
+      <% previous_version = @article.kb_article_versions.first %>
+      <% if previous_version %>
+        <%= link_to l(:button_kb_rollback), restore_version_kb_article_path(@article, version: previous_version.version),
+                    method: :post, class: 'icon icon-undo',
+                    data: { confirm: l(:text_kb_confirm_rollback, number: previous_version.version) } %>
+      <% end %>
       <%= link_to (@article.pinned? ? l(:button_kb_unpin) : l(:button_kb_pin)), toggle_pin_kb_article_path(@article),
                   method: :post, class: 'icon icon-bookmark' %>
       <%= delete_link kb_article_path(@article) %>

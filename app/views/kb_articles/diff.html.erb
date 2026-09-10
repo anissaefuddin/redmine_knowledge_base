@@ -9,14 +9,14 @@
 <h2><%= l(:label_kb_compare) %>: <%= @article.title %></h2>
 
 <p>
-  <%= l(:label_kb_version, number: @version.version) %>
-  <em>(<%= link_to_user(@version.author) %>, <%= format_time(@version.created_at) %>)</em>
+  <%= l(:label_kb_version, number: @from_version.version) %>
+  <em>(<%= link_to_user(@from_version.author) %>, <%= format_time(@from_version.created_at) %>)</em>
   &#8594;
-  <%= l(:label_kb_version, number: @article.version) %> (<%= l(:label_kb_current_version) %>)
-  <em>(<%= link_to_user(@article.updated_by || @article.author) %>, <%= format_time(@article.updated_at) %>)</em>
+  <%= @to_label %>
+  <em>(<%= link_to_user(@to_author) %>, <%= format_time(@to_date) %>)</em>
 </p>
 
-<pre class="text-diff"><%= Redmine::Helpers::Diff.new(@article.content, @version.content).to_html %></pre>
+<pre class="text-diff"><%= Redmine::Helpers::Diff.new(@to_content, @from_version.content).to_html %></pre>
 
 <p>
   <%= link_to l(:label_kb_history), history_kb_article_path(@article) %> |

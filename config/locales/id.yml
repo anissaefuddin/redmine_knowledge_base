@@ -60,6 +60,8 @@ id:
   text_kb_position_hint: "Angka lebih kecil tampil lebih dulu di antara kategori dengan induk yang sama."
   text_kb_attachments_hint: "File yang dilampirkan di sini muncul di daftar Files di bawah artikel. Untuk menyisipkan gambar langsung di dalam konten, paste atau drag gambar ke editor, atau pakai tombol Upload di block Image."
   button_kb_restore: "Restore"
+  button_kb_rollback: "Rollback ke versi sebelumnya"
+  text_kb_confirm_rollback: "Rollback ke versi %{number} (versi tepat sebelum ini)? Konten saat ini akan tetap tersimpan di riwayat dan bisa di-restore lagi nanti."
   text_kb_confirm_restore: "Restore ke versi ini? Konten saat ini akan tetap tersimpan di riwayat dan bisa di-restore lagi nanti."
   notice_kb_version_restored: "Berhasil restore ke versi %{number}."
   error_kb_version_restore_failed: "Gagal restore versi ini."
@@ -130,6 +132,7 @@ id:
   text_kb_synced_block_hint: "Konten ini dibagikan: mengedit dan menyimpan di sini akan memperbarui semua artikel yang mereferensikan synced block yang sama."
 
   label_kb_link_preview_error: "Tidak bisa mengambil preview untuk link ini."
+  error_kb_tag_create_failed: "Tidak bisa membuat tag ini."
 
   errors:
     messages:

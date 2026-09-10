@@ -38,11 +38,11 @@ Redmine::Plugin.register :redmine_knowledge_base do
     # draft new articles but never touch someone else's.
     permission :add_kb_articles,
                { kb_articles: %i[new create duplicate], kb_uploads: [:create],
-                 kb_link_previews: [:show], kb_synced_blocks: [:update] }
+                 kb_link_previews: [:show], kb_synced_blocks: [:update], kb_tags: [:quick_create] }
 
     permission :edit_own_kb_articles,
                { kb_articles: %i[edit update], kb_uploads: [:create],
-                 kb_link_previews: [:show], kb_synced_blocks: [:update] }
+                 kb_link_previews: [:show], kb_synced_blocks: [:update], kb_tags: [:quick_create] }
 
     # Editor tier: superset of the two Contributor permissions above, plus
     # edit/delete/pin/restore on EVERY article regardless of author. Deliberately
@@ -54,7 +54,8 @@ Redmine::Plugin.register :redmine_knowledge_base do
                { kb_articles: %i[new create duplicate edit update destroy restore_version
                                   add_project remove_project add_related remove_related toggle_pin
                                   trash restore destroy_permanently],
-                 kb_uploads: [:create], kb_link_previews: [:show], kb_synced_blocks: [:update] }
+                 kb_uploads: [:create], kb_link_previews: [:show], kb_synced_blocks: [:update],
+                 kb_tags: [:quick_create] }
 
     permission :manage_kb_categories,
                { kb_categories: %i[index new create edit update destroy] }

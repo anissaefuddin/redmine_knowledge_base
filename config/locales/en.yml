@@ -60,6 +60,8 @@ en:
   text_kb_position_hint: "Lower numbers appear first within the same parent category."
   text_kb_attachments_hint: "Files attached here show up in the Files list below the article. To put an image inline in the content instead, paste or drag it directly into the editor, or use the Image block's Upload button."
   button_kb_restore: "Restore"
+  button_kb_rollback: "Rollback to previous version"
+  text_kb_confirm_rollback: "Rollback to version %{number} (the version right before this one)? The current content will be kept in history and can be restored again later."
   text_kb_confirm_restore: "Restore this version? The current content will be kept in history and can be restored again later."
   notice_kb_version_restored: "Restored version %{number}."
   error_kb_version_restore_failed: "Could not restore this version."
@@ -132,6 +134,7 @@ en:
   # Bookmark / PDF / columns / toggle block editor UI (JS-only strings live
   # in kb_block_editor.js; these are the ones referenced from Ruby views)
   label_kb_link_preview_error: "Could not fetch a preview for this link."
+  error_kb_tag_create_failed: "Could not create this tag."
 
   errors:
     messages:

@@ -12,12 +12,16 @@ get 'kb_link_previews', to: 'kb_link_previews#show', as: 'kb_link_previews', for
 resources :kb_categories, only: %i[index show new create edit update destroy]
 
 resources :kb_tags, only: %i[index new create edit update destroy]
+post 'kb_tags/quick_create', to: 'kb_tags#quick_create', as: 'quick_create_kb_tag', format: false
 
 resources :kb_articles, only: %i[show new create edit update destroy] do
   member do
     get :history
     get 'versions/:version', action: :version, as: 'version'
-    get 'versions/:version/diff', action: :diff, as: 'diff_version'
+    # version (and optional compare_to) are query params, not path segments,
+    # so a plain GET <select> form on the History page can drive an
+    # arbitrary version-vs-version compare without any JS to build the URL.
+    get 'versions/diff', action: :diff, as: 'diff_version'
     post 'versions/:version/restore', action: :restore_version, as: 'restore_version'
     post 'projects', action: :add_project, as: 'add_project'
     delete 'projects/:project_id', action: :remove_project, as: 'remove_project'
