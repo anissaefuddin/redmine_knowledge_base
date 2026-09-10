@@ -217,6 +217,6 @@ class KbArticlesController < ApplicationController
   end
 
   def article_params
-    params.require(:kb_article).permit(:title, :content, :kb_category_id, :status, :icon, tag_ids: [])
+    params.require(:kb_article).permit(:title, :content, :kb_category_id, :status, tag_ids: [])
   end
 end

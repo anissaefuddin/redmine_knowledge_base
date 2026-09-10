@@ -36,7 +36,7 @@
       <% @breadcrumb.each do |c| %> / <%= link_to c.name, kb_category_path(c) %><% end %>
     </div>
 
-    <h1><%= kb_article_display_title(@article) %></h1>
+    <h1><%= @article.title %></h1>
 
     <div class="kb-article-badges">
       <% if @article.pinned? %>

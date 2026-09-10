@@ -1091,30 +1091,10 @@ table.kb-block-table th input {
 
 .kb-form-title-row {
   margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.kb-form-icon-input {
-  width: 44px;
-  flex: 0 0 auto;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  box-shadow: none;
-  padding: 4px;
-  font-size: 24px;
-  text-align: center;
-  background: transparent;
-}
-
-.kb-form-icon-input:focus {
-  outline: none;
-  border-color: #ccc;
 }
 
 .kb-form-title-input {
-  flex: 1 1 auto;
+  width: 100%;
   border: none;
   box-shadow: none;
   padding: 4px 0;

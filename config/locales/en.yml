@@ -116,10 +116,6 @@ en:
   text_kb_confirm_delete_permanently: "Delete this article permanently? This cannot be undone - version history and attachments go with it."
   label_kb_deleted_at: "Deleted"
 
-  # Page icon
-  label_kb_icon: "Icon"
-  text_kb_icon_hint: "One emoji shown next to the title in lists and cards."
-
   # Saved searches
   label_kb_saved_searches: "Saved searches"
   label_kb_search_name_placeholder: "Name this search…"

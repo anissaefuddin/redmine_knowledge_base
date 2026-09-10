@@ -116,10 +116,6 @@ id:
   text_kb_confirm_delete_permanently: "Hapus artikel ini secara permanen? Tidak bisa dibatalkan - riwayat versi dan lampiran ikut terhapus."
   label_kb_deleted_at: "Dihapus"
 
-  # Page icon
-  label_kb_icon: "Ikon"
-  text_kb_icon_hint: "Satu emoji yang ditampilkan di samping judul pada daftar dan card."
-
   # Saved searches
   label_kb_saved_searches: "Pencarian tersimpan"
   label_kb_search_name_placeholder: "Beri nama pencarian ini…"

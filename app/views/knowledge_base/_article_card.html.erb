@@ -1,6 +1,6 @@
 <div class="kb-article-card">
   <div class="kb-article-card-category"><%= article.kb_category.name %></div>
-  <h3><%= link_to kb_article_display_title(article), kb_article_path(article) %></h3>
+  <h3><%= link_to article.title, kb_article_path(article) %></h3>
   <div class="kb-article-card-meta">
     <%= l(:label_kb_last_updated_by,
           author: link_to_user(article.updated_by || article.author),
